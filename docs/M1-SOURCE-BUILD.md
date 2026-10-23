@@ -1,15 +1,21 @@
-# Source-build verification for the experimental prototype
+# Source-build verification for experimental prototype
 
-The workflow `.github/workflows/qemu-source-build.yml` now runs on
-changes to its source-build scripts **and** supports manual dispatch.
+CI source build runs when generator, inspection, QMP verifier or workflow changes,
+and may be triggered manually.
 
-It checks out QEMU v10.0.0, applies the experimental H3-backed
-`orangepi-zero-lts-proto` registration, builds ARM QEMU, verifies the
-machine list, and checks a QMP greeting and command response.
+## First CI failure and correction
 
-The workflow uploads the resolved QEMU commit and QMP evidence.
-A green workflow is needed before the source-build gate can be marked done.
+Run 39908574348 fetched QEMU v10.0.0 successfully (resolved SHA
+`7c949c53e936aa3a658d84ab53bae5cadaa5d59c`) and passed H3 source
+inspection, but the generator rejected `orangepi.c`.
 
-This is still a **research prototype**, not an H2+ emulator. It uses the
-H3 board implementation and does not validate U-Boot, UART, Linux,
-H2+ MMIO or realistic Orange Pi Zero LTS RAM.
+Root cause: the generator assumed a `DEFINE_MACHINE_ARM` macro and an
+incorrect initializer signature. Actual QEMU v10.0.0 uses
+`DEFINE_MACHINE("orangepi-pc", orangepi_machine_init)` and
+`static void orangepi_machine_init(MachineClass *mc)`.
+
+The generator and its unit-test fixture now use the actual upstream
+declarations. A successful subsequent source build is required before
+claiming prototype registration or QMP initialization.
+
+This remains an H3-backed research prototype, **not** H2+ emulation.
