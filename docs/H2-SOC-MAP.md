@@ -1,15 +1,22 @@
 # H2+ inherited SoC register inventory
 
-Linux v6.12 `sun8i-h3.dtsi` includes `sunxi-h3-h5.dtsi`,
-which holds common peripherals. The initial extractor incorrectly
-looked only in the first file. CI run 39909973566 failed with
-`expected one uart0 node, found 0`.
+The Orange Pi Zero board DTS includes the H3 SoC DTSI, which in
+turn includes the shared H3/H5 DTSI. The source-inventory workflow
+downloads both Linux v6.12 sources, extracts UART0, MMC0 and EMAC
+base addresses and preserves the source files, checksums and JSON.
 
-The corrected workflow downloads **both** pinned source files using
-the authenticated GitHub Contents API, preserves their SHA256 sums,
-and extracts UART0, MMC0 and EMAC node base addresses.
+## Verified CI
 
-These are inherited H3/H5 source addresses; H2+ applicability,
-interrupts and device functionality still require verification.
+Run [39910094954](https://github.com/Ploos-AS/qemu-sbc/actions/runs/39910094954)
+passed on commit `b1f3a37`. The previous attempt failed because
+the parser did not follow the H3-to-shared-H3/H5 DTSI inclusion.
 
-CI: https://github.com/Ploos-AS/qemu-sbc/actions/workflows/h2-soc-map.yml
+The workflow now also executes offline extractor regression tests for
+normal, missing, duplicated and invalid-address cases.
+
+## Limits
+
+These are addresses in an inherited Linux source description, not
+a validated H2+ MMIO implementation. Before using the extracted
+values in QEMU, validate H2+ overrides, IRQs, register ranges,
+clocks, reset behavior and guest boot evidence.

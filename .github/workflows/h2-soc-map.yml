@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'scripts/extract-h2-soc-map.py'
+      - 'tests/test_h2_soc_map.py'
       - '.github/workflows/h2-soc-map.yml'
   workflow_dispatch:
 
@@ -12,6 +13,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - name: Run offline extractor regression tests
+        run: python3 -m unittest discover -s tests -p 'test_h2_soc_map.py' -v
       - name: Fetch Linux v6.12 inherited SoC descriptions
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
