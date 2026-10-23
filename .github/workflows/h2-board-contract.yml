@@ -1,0 +1,31 @@
+name: H2+ board DTS contract
+
+on:
+  push:
+    paths:
+      - 'scripts/check-h2-board-dts.py'
+      - '.github/workflows/h2-board-contract.yml'
+  workflow_dispatch:
+
+jobs:
+  board-dts:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Linux v6.12 board description
+        run: |
+          curl --fail --location --retry 3 \
+            https://raw.githubusercontent.com/torvalds/linux/v6.12/arch/arm/boot/dts/allwinner/sun8i-h2-plus-orangepi-zero.dts \
+            --output h2-board.dts
+          sha256sum h2-board.dts | tee h2-board.sha256
+      - name: Validate board contract
+        run: python3 scripts/check-h2-board-dts.py h2-board.dts
+      - name: Preserve evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h2-board-dts-evidence
+          path: |
+            h2-board.dts
+            h2-board.sha256
+          if-no-files-found: ignore
