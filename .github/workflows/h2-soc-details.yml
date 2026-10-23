@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'scripts/extract-h2-soc-details.py'
+      - 'tests/test_h2_soc_details.py'
       - '.github/workflows/h2-soc-details.yml'
   workflow_dispatch:
 
@@ -12,6 +13,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - name: Run offline detail extractor tests
+        run: python3 -m unittest discover -s tests -p 'test_h2_soc_details.py' -v
       - name: Fetch pinned Linux v6.12 sources
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
