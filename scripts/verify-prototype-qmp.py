@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate machine registration and QMP startup of research prototype."""
+"""Validate research machine registration, QMP startup and memory-size gate."""
 import argparse
 import json
 import subprocess

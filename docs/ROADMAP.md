@@ -1,19 +1,19 @@
 # Roadmap
 
 ## M0 — Bootstrap
-- [x] Repository scope, board inventory, licenses and initial CI
+- [x] Repository scope, board inventory, licenses and CI
 - [x] Mango identified as GL-MT300N-V2 / MT7628NN
-- [x] Select QEMU v10.0.0 as default source release
-- [ ] Verify source build and record exact upstream commit SHA
-- [ ] Record board-revision-specific Orange Pi Zero LTS hardware references
+- [x] QEMU v10.0.0 selected and full source SHA recorded
+- [x] Successful source build and prototype QMP initialization (run 39908681050)
+- [ ] Board-revision-specific Orange Pi Zero LTS hardware references
 
 ## M1 — Orange Pi Zero LTS
-- [x] H2+ research inventory and reference machine-list CI test
-- [x] H3 reference source inspection script and implementation acceptance gates
-- [ ] Verified H2+ vs H3 register and IRQ delta table
-- [ ] Dedicated Orange Pi Zero LTS QEMU machine implementation
-- [ ] Bootloader UART output
-- [ ] qtests for MMIO, reset and interrupts
+- [x] H2+ research inventory and reference machine-list test
+- [x] H3 source inspection and experimental H3-backed machine prototype
+- [x] Compile prototype, register machine and initialize QMP
+- [ ] Verified H2+ vs H3 register/IRQ differences
+- [ ] Independent Orange Pi Zero LTS machine and correct RAM support
+- [ ] U-Boot UART boot log and qtests
 
 ## M2 — Orange Pi Zero LTS Linux
 - SD/MMC, timers, Ethernet, Linux boot and compatibility evidence

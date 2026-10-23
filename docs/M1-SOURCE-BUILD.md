@@ -1,21 +1,29 @@
 # Source-build verification for experimental prototype
 
-CI source build runs when generator, inspection, QMP verifier or workflow changes,
-and may be triggered manually.
+## Verified CI result
 
-## First CI failure and correction
+GitHub Actions source build run
+[39908681050](https://github.com/Ploos-AS/qemu-sbc/actions/runs/39908681050)
+completed successfully on commit
+`27ba839a752cf0bd3bce90cb06f968a4d72a0035`.
 
-Run 39908574348 fetched QEMU v10.0.0 successfully (resolved SHA
-`7c949c53e936aa3a658d84ab53bae5cadaa5d59c`) and passed H3 source
-inspection, but the generator rejected `orangepi.c`.
+The workflow fetched QEMU v10.0.0, ran H3 source inspection, applied the
+`orangepi-zero-lts-proto` registration, compiled `qemu-system-arm`,
+checked machine registration and confirmed a QMP greeting and command
+response. The accompanying static workflow run 39908681117 passed.
 
-Root cause: the generator assumed a `DEFINE_MACHINE_ARM` macro and an
-incorrect initializer signature. Actual QEMU v10.0.0 uses
-`DEFINE_MACHINE("orangepi-pc", orangepi_machine_init)` and
-`static void orangepi_machine_init(MachineClass *mc)`.
+Upstream QEMU v10.0.0 was resolved in the earlier run to
+`7c949c53e936aa3a658d84ab53bae5cadaa5d59c`.
 
-The generator and its unit-test fixture now use the actual upstream
-declarations. A successful subsequent source build is required before
-claiming prototype registration or QMP initialization.
+## Limits
 
-This remains an H3-backed research prototype, **not** H2+ emulation.
+- H3-backed research prototype, not an H2+ SoC implementation.
+- No U-Boot, UART boot log, MMC boot, guest Linux or Ethernet test.
+- Current model inherits the H3 board's 1 GiB RAM requirement.
+
+## Next engineering gate
+
+Record actual Orange Pi Zero LTS hardware RAM sizes, implement a separate
+board initialization path with verified H2+ behavior, then add qtests and
+bootloader evidence. Do not change the final board support status based
+solely on the successful prototype source build.
