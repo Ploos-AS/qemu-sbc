@@ -1,0 +1,46 @@
+name: H2+ UART0 evidence constants
+
+on:
+  push:
+    paths:
+      - 'scripts/generate-h2-uart0.py'
+      - 'tests/test_h2_uart0.py'
+      - '.github/workflows/h2-uart0.yml'
+  workflow_dispatch:
+
+jobs:
+  uart0:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run UART0 generator regression tests
+        run: python3 -m unittest discover -s tests -p 'test_h2_uart0.py' -v
+      - name: Fetch pinned Linux v6.12 DTSI evidence
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for entry in "sun8i-h3.dtsi:h3-inherited.dtsi" "sunxi-h3-h5.dtsi:h3-h5-shared.dtsi"; do
+            source="${entry%%:*}"
+            output="${entry##*:}"
+            curl --fail --location --retry 3 \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github.raw+json" \
+              "https://api.github.com/repos/torvalds/linux/contents/arch/arm/boot/dts/allwinner/$source?ref=v6.12" \
+              --output "$output"
+          done
+      - name: Build source-derived wiring plan
+        run: |
+          python3 scripts/extract-h2-soc-details.py h3-inherited.dtsi h3-h5-shared.dtsi --output h2-soc-details.json
+          python3 scripts/translate-h2-gic.py h2-soc-details.json --output h2-gic-irqs.json
+          python3 scripts/build-h2-wiring-plan.py h2-soc-details.json h2-gic-irqs.json --output h2-wiring-plan.json
+      - name: Generate UART0 constants
+        run: python3 scripts/generate-h2-uart0.py h2-wiring-plan.json --output h2-uart0-constants.h
+      - name: Preserve generated UART0 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h2-uart0-evidence
+          path: |
+            h2-wiring-plan.json
+            h2-uart0-constants.h
+          if-no-files-found: ignore
