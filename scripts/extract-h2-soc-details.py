@@ -28,7 +28,7 @@ for label, kind in (("uart0", "serial"), ("mmc0", "mmc"), ("emac", "ethernet")):
     body = text[m.end():i-1]
     properties = {}
     for prop in ("reg", "interrupts"):
-        matches = re.findall(rf"(?m)^\s*{prop}\s*=\s*(.*?);", body, re.S)
+        matches = re.findall(rf"(?m)(?:^|;)\s*{prop}\s*=\s*(.*?);", body, re.S)
         if len(matches) != 1:
             raise SystemExit(f"FAIL: expected one {label}.{prop}, got {len(matches)}")
         raw = matches[0].strip()
