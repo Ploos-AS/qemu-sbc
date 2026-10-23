@@ -1,27 +1,39 @@
 # Experimental H2+ registration prototype
 
-This milestone adds a **source transformation experiment**, not a usable Orange Pi Zero LTS emulator.
+The prototype `orangepi-zero-lts-proto` uses the existing QEMU H3 board
+initializer. It is **not** an Orange Pi Zero LTS / H2+ emulator.
 
-The prototype registers `orangepi-zero-lts-proto` with QEMU's existing H3 `orangepi_machine_init` implementation. It intentionally retains the H3 board's **1 GiB RAM** and all its H3 peripheral behavior. This is *not* a faithful H2+ implementation, and is not the final `orangepi-zero-lts` name.
+## Verified source build
 
-## Try it locally
+Commit `27ba839a752cf0bd3bce90cb06f968a4d72a0035` passed QEMU v10.0.0
+source build, machine registration and QMP startup:
+https://github.com/Ploos-AS/qemu-sbc/actions/runs/39908681050
+
+The experimental machine inherits the H3 board's fixed **1 GiB RAM**
+restriction. The source-build CI also contains a negative test checking
+that a 256 MiB configuration is rejected, to prevent accidental claims
+of correct H2+ RAM support.
+
+## Local reproduction
 
 ```sh
 ./scripts/bootstrap-qemu.sh
-python3 scripts/create-h2-prototype.py --qemu-src _work/qemu
 python3 scripts/create-h2-prototype.py --qemu-src _work/qemu --apply
-cd _work/qemu/build && make -j2 qemu-system-arm
-./qemu-system-arm -machine help | grep orangepi-zero-lts-proto
+make -C _work/qemu/build -j2 qemu-system-arm
+python3 scripts/verify-prototype-qmp.py _work/qemu/build/qemu-system-arm
+python3 scripts/verify-prototype-ram.py _work/qemu/build/qemu-system-arm
 ```
 
-`bootstrap-qemu.sh` resets the QEMU checkout to its baseline ref on each invocation; run the generator **after** bootstrap. The generated change is local to `_work/qemu` and not a patch against upstream. Run a real source build to verify API compatibility.
+Bootstrap checks out the upstream baseline; apply the generator **after**
+bootstrap. Source changes are local to `_work/qemu`.
 
-## Exit criteria
+## Next engineering gates
 
-- [ ] Generator works on the pinned QEMU release
-- [ ] New prototype machine registers and instantiates in a source build
-- [ ] Determine verified H2+ vs H3 SoC differences
-- [ ] Replace prototype with an independent H2+ SoC/board model
-- [ ] Add MMIO, reset, UART qtests and U-Boot serial boot
+- [x] QEMU v10.0.0 generator, source build and machine registration
+- [x] QMP startup
+- [ ] Confirm exact Orange Pi Zero LTS RAM variants from board references
+- [ ] Implement dedicated H2+ SoC and board initialization
+- [ ] Test actual RAM, MMIO, reset, UART and U-Boot serial boot
 
-Do not interpret registration, instantiation or successful H3 boot as H2+ hardware emulation.
+**Do not** interpret prototype registration or QMP startup as real H2+
+hardware support.

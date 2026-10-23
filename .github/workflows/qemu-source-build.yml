@@ -7,6 +7,7 @@ on:
       - 'scripts/inspect-h3-reference.py'
       - 'scripts/verify-prototype-qmp.py'
       - 'scripts/verify-qemu-revision.sh'
+      - 'scripts/verify-prototype-ram.py'
       - '.github/workflows/qemu-source-build.yml'
   workflow_dispatch:
 
@@ -40,6 +41,8 @@ jobs:
         run: ninja -C _work/qemu/build qemu-system-arm
       - name: Verify registration and QMP startup
         run: python3 scripts/verify-prototype-qmp.py _work/qemu/build/qemu-system-arm
+      - name: Verify inherited H3 RAM restriction
+        run: python3 scripts/verify-prototype-ram.py _work/qemu/build/qemu-system-arm
       - name: Upload evidence
         if: always()
         uses: actions/upload-artifact@v4
