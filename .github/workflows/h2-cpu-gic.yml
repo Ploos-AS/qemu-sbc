@@ -1,0 +1,35 @@
+name: H2+ CPU GIC reference audit
+
+on:
+  push:
+    paths:
+      - 'scripts/audit-h2-cpu-gic.py'
+      - 'tests/test_h2_cpu_gic.py'
+      - '.github/workflows/h2-cpu-gic.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Offline regression tests
+        run: python3 -m unittest discover -s tests -p 'test_h2_cpu_gic.py' -v
+      - name: Fetch pinned QEMU source
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl --fail --location --retry 3 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github.raw+json" \
+            "https://api.github.com/repos/qemu/qemu/contents/hw/arm/allwinner-h3.c?ref=v10.0.0" \
+            --output allwinner-h3.c
+      - name: Audit CPU GIC reference
+        run: python3 scripts/audit-h2-cpu-gic.py allwinner-h3.c --output h2-cpu-gic-reference.json
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h2-cpu-gic-reference
+          path: h2-cpu-gic-reference.json
+          if-no-files-found: ignore
