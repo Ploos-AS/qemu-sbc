@@ -5,8 +5,10 @@
 - [x] Initial documentation and license policy
 - [x] Clone/build/smoke scripts
 - [x] CI pipeline definition
-- [ ] CI green on default branch (requires workflow run verification)
-- [ ] Record exact upstream QEMU revision and hardware reference sources
+- [x] First CI smoke run passed
+- [x] Clarify Mango identity: **GL-MT300N-V2 / MT7628NN**, not GL-MT300N / MT7620NN
+- [ ] Verify latest CI and pin upstream QEMU source revision
+- [ ] Record Orange Pi Zero LTS hardware references
 
 ## M1 — Orange Pi Zero LTS initial machine
 - H2+ board and SoC inventory, address map, reset and clock baseline
@@ -22,9 +24,10 @@
 - AR9331 SoC: CPU, UART, SPI NOR, RAM, interrupts
 - U-Boot, wired Ethernet and MikroWrt boot validation
 
-## M5–M6 — GL.iNet Mango GL-MT300N-V2
-- MT7628 SoC: CPU, UART, SPI NOR, RAM, interrupts
+## M5–M6 — GL.iNet GL-MT300N-V2 (original Mango target)
+- MT7628NN: CPU, UART, SPI NOR, RAM, interrupts
 - U-Boot, wired Ethernet, OpenWrt/MikroWrt/PocketBox validation
+- Explicitly exclude the older GL-MT300N from this target
 
 ## M7+
 - GPIO, buttons, LEDs, USB; optional Wi-Fi feasibility
