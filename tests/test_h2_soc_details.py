@@ -38,6 +38,26 @@ class DetailsTests(unittest.TestCase):
         result, _ = self.check(NODES.replace("reg = <0x01c30000 0x10000>;", "reg = <>;"))
         self.assertNotEqual(result.returncode, 0)
 
+    def test_nested_ethernet_child_register_is_ignored(self):
+        src = NODES.replace(
+            "interrupts = <0 3 4>; };",
+            """interrupts = <0 3 4>;
+                mdio {
+                    phy0: ethernet-phy@1 {
+                        reg = <1>;
+                        interrupts = <0 99 4>;
+                    };
+                };
+            };""")
+        result, data = self.check(src)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            data["peripherals"]["emac"]["reg"]["cells"],
+            [["0x01c30000", "0x10000"]])
+        self.assertEqual(
+            data["peripherals"]["emac"]["interrupts"]["cells"],
+            [["0", "3", "4"]])
+
     def test_duplicate_uart(self):
         result, _ = self.check(NODES + NODES.splitlines()[1] + "\n")
         self.assertNotEqual(result.returncode, 0)
