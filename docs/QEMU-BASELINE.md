@@ -1,6 +1,12 @@
 # QEMU source baseline
 
-The bootstrap script defaults to the **QEMU v10.0.0 release tag** rather than tracking upstream HEAD.
+The default QEMU source is the v10.0.0 tag, independently resolved by
+GitHub Actions to commit
+`7c949c53e936aa3a658d84ab53bae5cadaa5d59c`.
+
+The source-build workflow now checks this **exact commit** before
+compiling. The default local bootstrap does the same; `QEMU_REF`
+permits explicitly overriding the release for experiments.
 
 ```sh
 ./scripts/bootstrap-qemu.sh
@@ -8,14 +14,11 @@ The bootstrap script defaults to the **QEMU v10.0.0 release tag** rather than tr
 ./scripts/check-m1-baseline.sh
 ```
 
-To override the source revision for experiments:
+To experiment with a different upstream ref, set `QEMU_REF` and record
+the resulting SHA. This does not make that version a supported baseline.
 
-```sh
-QEMU_REF=v10.0.0 ./scripts/bootstrap-qemu.sh
-```
+GitHub Actions' packaged-QEMU smoke test is separate from the actual
+v10.0.0 source-build workflow.
 
-The script prints the full resolved commit SHA for traceability. **The tag is a reproducible release selector, but this repository has not yet recorded and independently verified its commit SHA.** Before machine implementation, record the resolved SHA from a successful build and optionally enforce it in CI.
-
-GitHub Actions currently installs distribution-packaged QEMU for lightweight smoke tests; that does **not** validate a source build of the chosen release tag. Keep those test categories distinct.
-
-The reference `orangepi-pc` machine is Allwinner H3. It is not the target Orange Pi Zero LTS H2+ machine.
+The `orangepi-zero-lts-proto` research machine uses H3 internals.
+It is not the H2+ Orange Pi Zero LTS target.

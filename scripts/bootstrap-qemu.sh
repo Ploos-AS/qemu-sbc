@@ -12,6 +12,9 @@ git -C "$dir" checkout --detach FETCH_HEAD
 sha="$(git -C "$dir" rev-parse HEAD)"
 echo "QEMU source reference: $ref"
 echo "QEMU source commit: $sha"
+if [[ -z "${QEMU_REF:-}" ]]; then
+  bash "$root/scripts/verify-qemu-revision.sh" "$dir"
+fi
 mkdir -p "$dir/build"
 cd "$dir/build"
 ../configure --target-list=arm-softmmu,mips-softmmu --disable-werror

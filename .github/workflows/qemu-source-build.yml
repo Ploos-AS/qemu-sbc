@@ -6,6 +6,7 @@ on:
       - 'scripts/create-h2-prototype.py'
       - 'scripts/inspect-h3-reference.py'
       - 'scripts/verify-prototype-qmp.py'
+      - 'scripts/verify-qemu-revision.sh'
       - '.github/workflows/qemu-source-build.yml'
   workflow_dispatch:
 
@@ -24,6 +25,8 @@ jobs:
         run: |
           git clone --depth 1 --branch v10.0.0 https://gitlab.com/qemu-project/qemu.git _work/qemu
           git -C _work/qemu rev-parse HEAD | tee qemu-revision.txt
+      - name: Verify exact source commit
+        run: bash scripts/verify-qemu-revision.sh _work/qemu
       - name: Check reference sources
         run: python3 scripts/inspect-h3-reference.py --qemu-src _work/qemu
       - name: Generate prototype
