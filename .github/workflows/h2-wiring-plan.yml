@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'scripts/build-h2-wiring-plan.py'
+      - 'tests/test_h2_wiring_plan.py'
       - '.github/workflows/h2-wiring-plan.yml'
   workflow_dispatch:
 
@@ -12,6 +13,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - name: Run offline wiring plan regression tests
+        run: python3 -m unittest discover -s tests -p 'test_h2_wiring_plan.py' -v
       - name: Fetch pinned Linux v6.12 inherited DTSI files
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
