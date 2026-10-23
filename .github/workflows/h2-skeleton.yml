@@ -1,0 +1,17 @@
+name: H2+ isolated source skeleton
+
+on:
+  push:
+    paths:
+      - 'scripts/create-h2-skeleton.py'
+      - 'tests/test_h2_skeleton.py'
+      - '.github/workflows/h2-skeleton.yml'
+  workflow_dispatch:
+
+jobs:
+  skeleton:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test safe source creation
+        run: python3 -m unittest discover -s tests -p 'test_h2_skeleton.py' -v
