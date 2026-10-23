@@ -29,3 +29,30 @@
 - USB, GPIO, buttons, LEDs and Wi-Fi feasibility; upstream submissions
 
 **Acceptance:** A real board model and boot tests are required before claiming emulation support.
+
+## M8+ — PowerPC evaluation (long-term, not committed support)
+
+These targets are **candidates**, not implemented or promised emulation.
+Prioritize only after the ARM/MIPS board milestones and a feasibility review.
+
+1. **bplan Pegasos II** — first PowerPC candidate. Evaluate firmware/OF
+   compatibility, Marvell Discovery II system controller, PCI, IDE,
+   interrupt routing and reproducible guest boot. Relevant to PPCVM,
+   but this repository must not duplicate its implementation blindly.
+2. **bplan Pegasos I** — separate Articia S platform; not a trivial
+   Pegasos II variant. Assess chipset documentation and firmware
+   availability before scheduling.
+3. **bplan Efika 5K2** — Freescale MPC5200B based compact PowerPC board.
+   Evaluate MPC5200B peripherals, firmware and OS boot independently.
+
+### PowerPC acceptance gates
+
+- Identify exact board revision, SoC/chipset, RAM map and IRQ topology.
+- Document redistributable firmware and OS test assets, or require
+  user-supplied licensed images; never commit proprietary firmware.
+- Build a QEMU machine model and deterministic qtests for UART,
+  interrupts and storage.
+- Obtain reproducible boot logs from supported guest OSes.
+- Coordinate shared components and tests with the PPCVM project.
+
+No PowerPC machine is considered supported until these gates pass.
