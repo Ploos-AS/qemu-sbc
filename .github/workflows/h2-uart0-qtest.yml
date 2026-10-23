@@ -1,0 +1,29 @@
+name: H2+ UART0 reference MMIO smoke test
+
+on:
+  push:
+    paths:
+      - 'tests/qtest_h3_uart0_reference.py'
+      - '.github/workflows/h2-uart0-qtest.yml'
+  workflow_dispatch:
+
+jobs:
+  qtest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install QEMU build dependencies
+        run: sudo apt-get update && sudo apt-get install -y ninja-build meson pkg-config libglib2.0-dev libpixman-1-dev python3-venv
+      - name: Fetch pinned QEMU v10.0.0
+        run: git clone --filter=blob:none --depth=1 --branch v10.0.0 https://github.com/qemu/qemu.git qemu
+      - name: Build with isolated UART0 helper
+        run: |
+          python3 scripts/inject-h2-uart0.py --qemu-src qemu --apply
+          python3 scripts/integrate-h2-uart0-meson.py --qemu-src qemu --apply
+          cd qemu
+          ./configure --target-list=arm-softmmu --disable-docs --disable-werror
+          ninja -C build qemu-system-arm
+      - name: Exercise UART0 MMIO through QTest on H3 reference
+        timeout-minutes: 2
+        run: python3 tests/qtest_h3_uart0_reference.py --qemu qemu/build/qemu-system-arm
