@@ -4,16 +4,17 @@
 - [x] Repository scope and board inventory
 - [x] Initial documentation and license policy
 - [x] Clone/build/smoke scripts
-- [x] CI pipeline definition
-- [x] First CI smoke run passed
+- [x] CI pipeline definition and successful initial smoke runs
 - [x] Clarify Mango identity: **GL-MT300N-V2 / MT7628NN**, not GL-MT300N / MT7620NN
-- [ ] Verify latest CI and pin upstream QEMU source revision
-- [ ] Record Orange Pi Zero LTS hardware references
+- [ ] Pin upstream QEMU source revision
+- [ ] Record Orange Pi Zero LTS hardware references for the exact board revision
 
 ## M1 — Orange Pi Zero LTS initial machine
-- H2+ board and SoC inventory, address map, reset and clock baseline
-- Boot ROM / U-Boot execution path and UART
-- QTest coverage for MMIO, reset and basic interrupts
+- [x] H2+ subsystem research checklist and reference-machine CI smoke test
+- [ ] Verify H2+ vs H3 MMIO map, reset and clock differences
+- [ ] Implement actual Orange Pi Zero LTS machine registration
+- [ ] Boot ROM / U-Boot execution path and UART
+- [ ] QTest coverage for MMIO, reset and basic interrupts
 
 ## M2 — Orange Pi Zero LTS Linux
 - SD/MMC, timer/interrupts, Ethernet as required

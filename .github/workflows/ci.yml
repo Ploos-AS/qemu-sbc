@@ -1,4 +1,4 @@
-name: M0 checks
+name: QEMU SBC checks
 
 on:
   push:
@@ -17,6 +17,7 @@ jobs:
           test -s README.md
           test -s LICENSE
           test -s docs/ROADMAP.md
+          test -s docs/M1-REGISTER-INVENTORY.md
           test -s boards/orange-pi-zero-lts.md
           test -s boards/tl-wr703n.md
           test -s boards/gl-mt300n-v2.md
@@ -32,3 +33,4 @@ jobs:
           ln -s "$(command -v qemu-system-arm)" _work/qemu/build/qemu-system-arm
           ln -s "$(command -v qemu-system-mips)" _work/qemu/build/qemu-system-mips
           bash scripts/smoke.sh
+          bash scripts/check-m1-baseline.sh
