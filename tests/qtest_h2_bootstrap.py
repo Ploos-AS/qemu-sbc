@@ -19,7 +19,7 @@ def main():
                             stderr=subprocess.PIPE, text=True)
     try:
         assert proc.stdin is not None and proc.stdout is not None
-        proc.stdin.write("readl 0x40000000\n")
+        proc.stdin.write("writel 0x40000000 0x1234abcd\n")
         proc.stdin.flush()
         # QTest is a long-lived protocol: do not wait for QEMU to exit on EOF.
         # Read one response, then terminate the emulator explicitly.
@@ -28,9 +28,16 @@ def main():
         if not ready:
             raise RuntimeError("H2+ QTest RAM read timed out")
         reply = proc.stdout.readline().strip()
-        if not reply.startswith("OK "):
-            raise RuntimeError(f"unexpected RAM reply: {reply!r}")
-        int(reply.split()[1], 0)
+        if reply != "OK":
+            raise RuntimeError(f"RAM write failed: {reply!r}")
+        proc.stdin.write("readl 0x40000000\n")
+        proc.stdin.flush()
+        ready, _, _ = select.select([proc.stdout], [], [], 15)
+        if not ready:
+            raise RuntimeError("H2+ QTest RAM read timed out")
+        reply = proc.stdout.readline().strip()
+        if not reply.startswith("OK ") or int(reply.split()[1], 0) != 0x1234ABCD:
+            raise RuntimeError(f"RAM readback mismatch: {reply!r}")
     finally:
         if proc.poll() is None:
             proc.terminate()
@@ -39,7 +46,7 @@ def main():
         except subprocess.TimeoutExpired:
             proc.kill()
             proc.communicate()
-    print("PASS: independent H2+ machine launched; RAM read through QTest")
+    print("PASS: independent H2+ machine launched; RAM write/readback through QTest")
     print("NOTE: GIC/UART/boot not yet implemented")
 
 
