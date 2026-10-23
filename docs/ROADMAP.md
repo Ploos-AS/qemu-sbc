@@ -3,12 +3,13 @@
 ## M0 — Bootstrap
 - [x] Repository scope, board inventory, licenses and initial CI
 - [x] Mango identified as GL-MT300N-V2 / MT7628NN
-- [x] Select QEMU v10.0.0 as the default source release
+- [x] Select QEMU v10.0.0 as default source release
 - [ ] Verify source build and record exact upstream commit SHA
 - [ ] Record board-revision-specific Orange Pi Zero LTS hardware references
 
 ## M1 — Orange Pi Zero LTS
 - [x] H2+ research inventory and reference machine-list CI test
+- [x] H3 reference source inspection script and implementation acceptance gates
 - [ ] Verified H2+ vs H3 register and IRQ delta table
 - [ ] Dedicated Orange Pi Zero LTS QEMU machine implementation
 - [ ] Bootloader UART output
