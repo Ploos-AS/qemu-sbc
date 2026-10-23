@@ -1,0 +1,34 @@
+name: M0 checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shell syntax
+        run: bash -n scripts/*.sh
+      - name: Check files
+        run: |
+          test -s README.md
+          test -s LICENSE
+          test -s docs/ROADMAP.md
+          test -s boards/orange-pi-zero-lts.md
+          test -s boards/tl-wr703n.md
+          test -s boards/gl-mt300n-v2.md
+  upstream-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install packaged QEMU
+        run: sudo apt-get update && sudo apt-get install -y qemu-system-arm qemu-system-mips
+      - name: Smoke existing machines
+        run: |
+          mkdir -p _work/qemu/build
+          ln -s "$(command -v qemu-system-arm)" _work/qemu/build/qemu-system-arm
+          ln -s "$(command -v qemu-system-mips)" _work/qemu/build/qemu-system-mips
+          bash scripts/smoke.sh

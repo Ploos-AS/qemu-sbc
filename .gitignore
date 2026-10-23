@@ -1,0 +1,9 @@
+_work/
+build/
+__pycache__/
+*.pyc
+*.img
+*.qcow2
+*.elf
+*.bin
+*.log
