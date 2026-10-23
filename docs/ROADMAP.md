@@ -11,9 +11,10 @@
 - [x] H2+ research inventory and reference machine-list test
 - [x] H3 source inspection and experimental H3-backed machine prototype
 - [x] Compile prototype, register machine and initialize QMP
-- [ ] Verified H2+ vs H3 register/IRQ differences
-- [ ] Independent Orange Pi Zero LTS machine and correct RAM support
-- [ ] U-Boot UART boot log and qtests
+- [x] Define independent H2+ implementation and evidence gates
+- [ ] Verify exact H2+ RAM variants, MMIO and IRQ wiring from pinned sources
+- [ ] Independent Orange Pi Zero LTS board and H2+ SoC
+- [ ] UART0 qtest and U-Boot boot log
 
 ## M2 — Orange Pi Zero LTS Linux
 - SD/MMC, timers, Ethernet, Linux boot and compatibility evidence
