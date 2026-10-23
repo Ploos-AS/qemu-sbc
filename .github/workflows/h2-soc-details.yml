@@ -1,0 +1,41 @@
+name: H2+ inherited SoC details
+
+on:
+  push:
+    paths:
+      - 'scripts/extract-h2-soc-details.py'
+      - '.github/workflows/h2-soc-details.yml'
+  workflow_dispatch:
+
+jobs:
+  details:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned Linux v6.12 sources
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for entry in "sun8i-h3.dtsi:h3-inherited.dtsi" "sunxi-h3-h5.dtsi:h3-h5-shared.dtsi"; do
+            source="${entry%%:*}"
+            output="${entry##*:}"
+            curl --fail --location --retry 3 \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github.raw+json" \
+              "https://api.github.com/repos/torvalds/linux/contents/arch/arm/boot/dts/allwinner/$source?ref=v6.12" \
+              --output "$output"
+            sha256sum "$output" >> h2-detail-sources.sha256
+          done
+      - name: Extract raw register and IRQ cells
+        run: python3 scripts/extract-h2-soc-details.py h3-inherited.dtsi h3-h5-shared.dtsi --output h2-soc-details.json
+      - name: Upload source and inventory
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h2-inherited-soc-details
+          path: |
+            h3-inherited.dtsi
+            h3-h5-shared.dtsi
+            h2-detail-sources.sha256
+            h2-soc-details.json
+          if-no-files-found: ignore
