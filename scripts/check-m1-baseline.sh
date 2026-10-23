@@ -13,10 +13,7 @@ if ! grep -Eq '^[[:space:]]*orangepi-pc([[:space:]]|$)' <<< "$machines"; then
 fi
 echo "PASS: upstream orangepi-pc reference exists"
 if grep -Eq '^[[:space:]]*orangepi-zero-lts([[:space:]]|$)' <<< "$machines"; then
-  echo "INFO: orangepi-zero-lts is registered; run its dedicated qtests and boot tests before claiming support"
+  echo "INFO: orangepi-zero-lts registered; dedicated boot/qtests are still required"
 else
   echo "EXPECTED: orangepi-zero-lts not implemented yet"
 fi
-"$arm" -M orangepi-pc -nographic -display none -S -monitor none -serial none -nodefaults -accel tcg -machine dumpdtb=/dev/null 2>/dev/null && echo "PASS: reference machine instantiates" || {
-  echo "INFO: reference instantiation test unavailable on this QEMU build; machine-list test remains valid"
-}

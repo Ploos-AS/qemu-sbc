@@ -2,15 +2,16 @@
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 dir="${QEMU_SRC:-$root/_work/qemu}"
+ref="${QEMU_REF:-v10.0.0}"
 if [[ ! -d "$dir/.git" ]]; then
   mkdir -p "$(dirname "$dir")"
-  git clone --depth 1 https://gitlab.com/qemu-project/qemu.git "$dir"
+  git clone --no-checkout --filter=blob:none https://gitlab.com/qemu-project/qemu.git "$dir"
 fi
-if [[ -n "${QEMU_REF:-}" ]]; then
-  git -C "$dir" fetch --depth 1 origin "$QEMU_REF"
-  git -C "$dir" checkout --detach FETCH_HEAD
-fi
-echo "QEMU revision: $(git -C "$dir" rev-parse HEAD)"
+git -C "$dir" fetch --depth 1 origin "$ref"
+git -C "$dir" checkout --detach FETCH_HEAD
+sha="$(git -C "$dir" rev-parse HEAD)"
+echo "QEMU source reference: $ref"
+echo "QEMU source commit: $sha"
 mkdir -p "$dir/build"
 cd "$dir/build"
 ../configure --target-list=arm-softmmu,mips-softmmu --disable-werror
