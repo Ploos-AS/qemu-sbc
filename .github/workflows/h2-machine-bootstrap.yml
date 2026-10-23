@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'scripts/inject-h2-machine-bootstrap.py'
+      - 'tests/test_h2_machine_bootstrap.py'
       - '.github/workflows/h2-machine-bootstrap.yml'
   workflow_dispatch:
 
@@ -13,6 +14,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - name: Offline bootstrap safety tests
+        run: python3 -m unittest discover -s tests -p 'test_h2_machine_bootstrap.py' -v
       - name: Dependencies
         run: sudo apt-get update && sudo apt-get install -y ninja-build meson pkg-config libglib2.0-dev libpixman-1-dev python3-venv
       - name: QEMU 10.0.0
