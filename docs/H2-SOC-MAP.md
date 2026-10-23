@@ -1,17 +1,15 @@
 # H2+ inherited SoC register inventory
 
-The Orange Pi Zero board DTS includes the H3 SoC DTSI. This stage
-extracts UART0, MMC0 and EMAC base addresses from **Linux v6.12**
-`sun8i-h3.dtsi`, preserving the source and SHA256 as CI artifacts.
+Linux v6.12 `sun8i-h3.dtsi` includes `sunxi-h3-h5.dtsi`,
+which holds common peripherals. The initial extractor incorrectly
+looked only in the first file. CI run 39909973566 failed with
+`expected one uart0 node, found 0`.
 
-Run:
-```sh
-python3 scripts/extract-h2-soc-map.py h3-inherited.dtsi --output h2-soc-registers.json
-```
+The corrected workflow downloads **both** pinned source files using
+the authenticated GitHub Contents API, preserves their SHA256 sums,
+and extracts UART0, MMC0 and EMAC node base addresses.
 
-The output is a machine-readable inventory of **inherited H3 DTSI
-values**. It is not yet a verified H2+ register map: H2+ overrides,
-IRQ specifiers, register lengths, clock/reset and QEMU model behavior
-remain to be checked before using these values in the emulator.
+These are inherited H3/H5 source addresses; H2+ applicability,
+interrupts and device functionality still require verification.
 
 CI: https://github.com/Ploos-AS/qemu-sbc/actions/workflows/h2-soc-map.yml
