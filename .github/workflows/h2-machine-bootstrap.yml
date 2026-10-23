@@ -9,6 +9,10 @@ on:
       - '.github/workflows/h2-machine-bootstrap.yml'
   workflow_dispatch:
 
+concurrency:
+  group: h2-machine-bootstrap-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   bootstrap:
     runs-on: ubuntu-24.04
