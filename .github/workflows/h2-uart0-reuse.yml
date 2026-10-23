@@ -1,0 +1,49 @@
+name: H2+ UART0 QEMU reuse audit
+
+on:
+  push:
+    paths:
+      - 'scripts/audit-h2-uart0-reuse.py'
+      - 'tests/test_h2_uart0_reuse.py'
+      - '.github/workflows/h2-uart0-reuse.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run offline audit tests
+        run: python3 -m unittest discover -s tests -p 'test_h2_uart0_reuse.py' -v
+      - name: Fetch pinned QEMU and Linux source
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl --fail --location --retry 3 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github.raw+json" \
+            "https://api.github.com/repos/qemu/qemu/contents/hw/arm/allwinner-h3.c?ref=v10.0.0" \
+            --output allwinner-h3.c
+          for entry in "sun8i-h3.dtsi:h3-inherited.dtsi" "sunxi-h3-h5.dtsi:h3-h5-shared.dtsi"; do
+            source="${entry%%:*}"
+            output="${entry##*:}"
+            curl --fail --location --retry 3 \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github.raw+json" \
+              "https://api.github.com/repos/torvalds/linux/contents/arch/arm/boot/dts/allwinner/$source?ref=v6.12" \
+              --output "$output"
+          done
+      - name: Build source evidence
+        run: |
+          python3 scripts/extract-h2-soc-details.py h3-inherited.dtsi h3-h5-shared.dtsi --output h2-soc-details.json
+          python3 scripts/translate-h2-gic.py h2-soc-details.json --output h2-gic-irqs.json
+          python3 scripts/build-h2-wiring-plan.py h2-soc-details.json h2-gic-irqs.json --output h2-wiring-plan.json
+      - name: Audit QEMU UART0 reuse
+        run: python3 scripts/audit-h2-uart0-reuse.py allwinner-h3.c h2-wiring-plan.json --output h2-uart0-reuse.json
+      - name: Upload audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h2-uart0-qemu-reuse
+          path: h2-uart0-reuse.json
+          if-no-files-found: ignore
