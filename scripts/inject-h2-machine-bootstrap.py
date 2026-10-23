@@ -15,7 +15,6 @@ SOURCE = r'''/*
  */
 #include "qemu/osdep.h"
 #include "hw/boards.h"
-#include "hw/arm/arm.h"
 #include "hw/qdev-properties.h"
 #include "hw/core/cpu.h"
 #include "hw/sysbus.h"
