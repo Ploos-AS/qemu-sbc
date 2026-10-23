@@ -43,6 +43,7 @@ static void h2_zero_lts_class_init(ObjectClass *oc, void *data)
     mc->desc = "Orange Pi Zero LTS H2+ bootstrap (CPU/RAM only; no boot)";
     mc->init = h2_zero_lts_init;
     mc->default_ram_size = 256 * 1024 * 1024;
+    mc->default_ram_id = "orangepi-zero-lts-h2.ram";
     mc->default_cpu_type = ARM_CPU_TYPE_NAME("cortex-a7");
     mc->min_cpus = 1;
     mc->max_cpus = 1;
