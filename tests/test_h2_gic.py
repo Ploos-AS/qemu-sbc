@@ -31,8 +31,13 @@ class GicTests(unittest.TestCase):
     def test_bad_type(self):
         self.assertNotEqual(self.translate(["2", "49", "4"])[0].returncode, 0)
 
+    def test_known_gic_macros(self):
+        proc, data = self.translate(["GIC_SPI", "49", "IRQ_TYPE_LEVEL_HIGH"])
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(data["interrupts"]["uart0"]["gic_interrupt_id"], 81)
+
     def test_unresolved_macro(self):
-        self.assertNotEqual(self.translate(["GIC_SPI", "49", "4"])[0].returncode, 0)
+        self.assertNotEqual(self.translate(["UNKNOWN_IRQ_TYPE", "49", "4"])[0].returncode, 0)
 
     def test_invalid_ppi(self):
         self.assertNotEqual(self.translate(["1", "16", "4"])[0].returncode, 0)

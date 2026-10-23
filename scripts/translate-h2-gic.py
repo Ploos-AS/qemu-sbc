@@ -14,8 +14,13 @@ for name, entry in inventory["peripherals"].items():
     groups = entry["interrupts"]["cells"]
     if len(groups) != 1 or len(groups[0]) != 3:
         raise SystemExit(f"FAIL: {name} requires one 3-cell GIC interrupt specifier")
+    symbols = {"GIC_SPI": 0, "GIC_PPI": 1,
+               "IRQ_TYPE_EDGE_RISING": 1, "IRQ_TYPE_EDGE_FALLING": 2,
+               "IRQ_TYPE_LEVEL_HIGH": 4, "IRQ_TYPE_LEVEL_LOW": 8}
+    def resolve(cell):
+        return symbols[cell] if cell in symbols else int(cell, 0)
     try:
-        irq_type, irq_index, flags = (int(x, 0) for x in groups[0])
+        irq_type, irq_index, flags = (resolve(x) for x in groups[0])
     except ValueError as exc:
         raise SystemExit(f"FAIL: {name} has unresolved interrupt macros: {exc}")
     if irq_type not in (0, 1) or irq_index < 0 or flags < 0:
