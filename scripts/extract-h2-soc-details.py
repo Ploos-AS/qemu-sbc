@@ -26,6 +26,18 @@ for label, kind in (("uart0", "serial"), ("mmc0", "mmc"), ("emac", "ethernet")):
     if depth:
         raise SystemExit(f"FAIL: unclosed {label} node")
     body = text[m.end():i-1]
+    # Nested child nodes may have their own reg/interrupts properties.
+    # Mask them before reading only direct properties of the parent.
+    chars = list(body)
+    nesting = 0
+    for index, char in enumerate(body):
+        if char == "{":
+            nesting += 1
+        if nesting > 0:
+            chars[index] = " " if char != "\\n" else "\\n"
+        if char == "}":
+            nesting -= 1
+    body = "".join(chars)
     properties = {}
     for prop in ("reg", "interrupts"):
         matches = re.findall(rf"(?m)(?:^|;)\s*{prop}\s*=\s*(.*?);", body, re.S)
