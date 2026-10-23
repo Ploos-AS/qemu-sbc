@@ -38,6 +38,20 @@ def main():
         reply = proc.stdout.readline().strip()
         if not reply.startswith("OK ") or int(reply.split()[1], 0) != 0x1234ABCD:
             raise RuntimeError(f"RAM readback mismatch: {reply!r}")
+        # GICv2 distributor ID register: ARM GICv2 returns architecture ID.
+        # This probes an actual MMIO device, not just an unmapped zero page.
+        proc.stdin.write("readl 0x01c81fe8\\n")
+        proc.stdin.flush()
+        ready, _, _ = select.select([proc.stdout], [], [], 15)
+        if not ready:
+            raise RuntimeError("H2+ GIC distributor ID read timed out")
+        reply = proc.stdout.readline().strip()
+        if not reply.startswith("OK "):
+            raise RuntimeError(f"GIC distributor ID read failed: {reply!r}")
+        gic_id = int(reply.split()[1], 0)
+        if gic_id == 0:
+            raise RuntimeError("GIC distributor ID is zero; device may be unmapped")
+
     finally:
         if proc.poll() is None:
             proc.terminate()
@@ -47,7 +61,8 @@ def main():
             proc.kill()
             proc.communicate()
     print("PASS: independent H2+ machine launched; RAM write/readback through QTest")
-    print("NOTE: GIC/UART/boot not yet implemented")
+    print("PASS: GICv2 distributor ID register accessible")
+    print("NOTE: GIC interrupt delivery, UART and guest boot not yet tested")
 
 
 if __name__ == "__main__":
