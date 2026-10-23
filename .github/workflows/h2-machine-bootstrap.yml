@@ -5,6 +5,7 @@ on:
     paths:
       - 'scripts/inject-h2-machine-bootstrap.py'
       - 'tests/test_h2_machine_bootstrap.py'
+      - 'tests/qtest_h2_bootstrap.py'
       - '.github/workflows/h2-machine-bootstrap.yml'
   workflow_dispatch:
 
@@ -32,3 +33,7 @@ jobs:
       - name: Verify independent machine registration
         run: |
           qemu/build/qemu-system-arm -machine help | grep 'orangepi-zero-lts-h2'
+      - name: Smoke-test independent machine startup
+        timeout-minutes: 2
+        run: |
+          python3 tests/qtest_h2_bootstrap.py --qemu qemu/build/qemu-system-arm
