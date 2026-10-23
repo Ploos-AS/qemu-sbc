@@ -1,0 +1,56 @@
+name: QEMU source prototype build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  prototype:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install QEMU build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git python3 python3-venv ninja-build meson pkg-config \
+            libglib2.0-dev libpixman-1-dev libfdt-dev
+      - name: Fetch pinned release tag
+        run: |
+          git clone --depth 1 --branch v10.0.0 https://gitlab.com/qemu-project/qemu.git _work/qemu
+          git -C _work/qemu rev-parse HEAD | tee qemu-revision.txt
+      - name: Check reference sources
+        run: python3 scripts/inspect-h3-reference.py --qemu-src _work/qemu
+      - name: Generate prototype
+        run: python3 scripts/create-h2-prototype.py --qemu-src _work/qemu --apply
+      - name: Configure
+        run: |
+          mkdir -p _work/qemu/build
+          cd _work/qemu/build
+          ../configure --target-list=arm-softmmu --disable-werror --disable-docs
+      - name: Build QEMU ARM
+        run: ninja -C _work/qemu/build qemu-system-arm
+      - name: Verify prototype registration
+        run: |
+          _work/qemu/build/qemu-system-arm -machine help | tee machine-list.txt
+          grep -Eq '^[[:space:]]*orangepi-zero-lts-proto([[:space:]]|$)' machine-list.txt
+      - name: Test prototype machine instantiation
+        run: |
+          timeout 15s _work/qemu/build/qemu-system-arm \
+            -M orangepi-zero-lts-proto -accel tcg -display none -nographic \
+            -S -monitor none -serial none -nodefaults \
+            -qmp stdio <<<'{"execute":"qmp_capabilities"}' > qmp-output.txt || status=$?
+          if [[ "${status:-0}" -ne 0 && "${status:-0}" -ne 124 ]]; then
+            echo "Prototype instantiation failed with exit code $status"
+            exit 1
+          fi
+          grep -q '"QMP"' qmp-output.txt
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qemu-prototype-evidence
+          path: |
+            qemu-revision.txt
+            machine-list.txt
+            qmp-output.txt
+          if-no-files-found: ignore
