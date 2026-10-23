@@ -12,10 +12,14 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Download Linux v6.12 board description
+      - name: Download Linux v6.12 board description via authenticated GitHub API
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           curl --fail --location --retry 3 \
-            https://raw.githubusercontent.com/torvalds/linux/v6.12/arch/arm/boot/dts/allwinner/sun8i-h2-plus-orangepi-zero.dts \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github.raw+json" \
+            "https://api.github.com/repos/torvalds/linux/contents/arch/arm/boot/dts/allwinner/sun8i-h2-plus-orangepi-zero.dts?ref=v6.12" \
             --output h2-board.dts
           sha256sum h2-board.dts | tee h2-board.sha256
       - name: Validate board contract

@@ -1,29 +1,21 @@
-# H2+ Orange Pi Zero board contract — first executable checks
+# H2+ Orange Pi Zero board contract
 
-This document describes a **Linux device-tree contract**, not a working
-QEMU model. Source: Linux
-`arch/arm/boot/dts/allwinner/sun8i-h2-plus-orangepi-zero.dts`.
+Linux v6.12 source: `arch/arm/boot/dts/allwinner/sun8i-h2-plus-orangepi-zero.dts`.
 
-The source identifies the board as
-`xunlong,orangepi-zero` / `allwinner,sun8i-h2-plus`.
-It includes `sun8i-h3.dtsi`, but inheritance does **not** mean the
-H2+ is interchangeable with H3.
+The board DTS defines H2+ compatible strings, UART0 at 115200n8,
+MMC0 four-bit SD with PF6 card detect, internal EMAC PHY and
+optional disabled SPI NOR. These are source-backed board requirements,
+not proof of emulation.
 
-Executable assertions in `scripts/check-h2-board-dts.py` cover:
+## CI source retrieval
 
-- UART0 console alias and 115200n8 stdout
-- MMC0 four-bit bus and PF6 active-low card detection
-- EMAC internal MII PHY
-- SPI NOR optional/disabled in board DTS
-- Board compatible strings and shared H3 DTS inclusion
+The first CI attempt (run 39909754694) failed before running the
+contract checker because unauthenticated raw.githubusercontent.com
+returned HTTP 429. The workflow now uses the authenticated GitHub
+Contents API with the job's GITHUB_TOKEN and the pinned v6.12 tag.
 
-## Reproduce
+The contract checker must still pass in CI before its assertions
+can be counted as verified. The next stage is extracting MMIO and IRQ
+values from the inherited SoC device trees, not guessing them.
 
-```sh
-curl -fL https://raw.githubusercontent.com/torvalds/linux/v6.12/arch/arm/boot/dts/allwinner/sun8i-h2-plus-orangepi-zero.dts -o /tmp/sun8i-h2-plus-orangepi-zero.dts
-python3 scripts/check-h2-board-dts.py /tmp/sun8i-h2-plus-orangepi-zero.dts
-```
-
-The test checks only the named DTS properties. It does not infer RAM
-variants, peripheral MMIO addresses, interrupt numbers, clocks or boot
-compatibility. Those require additional pinned references and tests.
+Source: https://github.com/torvalds/linux/blob/v6.12/arch/arm/boot/dts/allwinner/sun8i-h2-plus-orangepi-zero.dts
