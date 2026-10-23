@@ -19,7 +19,7 @@ def main():
                             stderr=subprocess.PIPE, text=True)
     try:
         assert proc.stdin is not None and proc.stdout is not None
-        proc.stdin.write("readl 0x40000000\\n")
+        proc.stdin.write("readl 0x40000000\n")
         proc.stdin.flush()
         # QTest is a long-lived protocol: do not wait for QEMU to exit on EOF.
         # Read one response, then terminate the emulator explicitly.
