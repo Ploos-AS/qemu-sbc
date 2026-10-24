@@ -52,6 +52,25 @@ def main():
         gic_id = int(reply.split()[1], 0)
         if gic_id == 0:
             raise RuntimeError("GIC distributor ID is zero; device may be unmapped")
+        # GIC distributor control: exercise a writable register before IRQ tests.
+        # Disable, enable Group 0, and restore disabled state.
+        for value in (0, 1, 0):
+            proc.stdin.write(f"writel 0x01c81000 {value}\\n".encode("ascii"))
+            proc.stdin.flush()
+            ready, _, _ = select.select([proc.stdout], [], [], 15)
+            if not ready:
+                raise RuntimeError("H2+ GIC distributor control write timed out")
+            reply = os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip()
+            if reply != "OK":
+                raise RuntimeError(f"GIC distributor control write failed: {reply!r}")
+            proc.stdin.write(b"readl 0x01c81000\\n")
+            proc.stdin.flush()
+            ready, _, _ = select.select([proc.stdout], [], [], 15)
+            if not ready:
+                raise RuntimeError("H2+ GIC distributor control read timed out")
+            reply = os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip()
+            if not reply.startswith("OK ") or (int(reply.split()[1], 0) & 1) != value:
+                raise RuntimeError(f"GIC distributor control mismatch: expected {value}, got {reply!r}")
         # 16550-compatible UART0 scratch register (offset 7, regshift 2).
         # A writable scratch register distinguishes UART MMIO from open bus.
         proc.stdin.write(b"writel 0x01c2801c 0x5a\n")
@@ -81,7 +100,7 @@ def main():
             proc.kill()
             proc.communicate()
     print("PASS: independent H2+ machine launched; RAM write/readback through QTest")
-    print("PASS: GICv2 distributor ID register accessible")
+    print("PASS: GICv2 distributor ID and control register write/readback")
     print("PASS: UART0 scratch register write/readback through QTest")
     print("NOTE: GIC interrupt delivery, UART TX/RX and guest boot not yet tested")
 
