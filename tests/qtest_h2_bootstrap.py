@@ -118,6 +118,25 @@ def main():
             reply = os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip()
             if not reply.startswith("OK ") or (int(reply.split()[1], 0) & 1) != expected:
                 raise RuntimeError(f"GIC SPI0 pending mismatch: expected {expected}, got {reply!r}")
+        # UART0 interrupt-enable register (IER), offset 1 with regshift 2.
+        # This tests UART register behavior; hardware IRQ assertion is a later test.
+        for value in (0, 2, 0):
+            proc.stdin.write(f"writel 0x01c28004 {value}\n".encode("ascii"))
+            proc.stdin.flush()
+            ready, _, _ = select.select([proc.stdout], [], [], 15)
+            if not ready:
+                raise RuntimeError("H2+ UART0 IER write timed out")
+            reply = os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip()
+            if reply != "OK":
+                raise RuntimeError(f"UART0 IER write failed: {reply!r}")
+            proc.stdin.write(b"readl 0x01c28004\n")
+            proc.stdin.flush()
+            ready, _, _ = select.select([proc.stdout], [], [], 15)
+            if not ready:
+                raise RuntimeError("H2+ UART0 IER read timed out")
+            reply = os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip()
+            if not reply.startswith("OK ") or (int(reply.split()[1], 0) & 2) != value:
+                raise RuntimeError(f"UART0 IER mismatch: expected {value}, got {reply!r}")
         # 16550-compatible UART0 scratch register (offset 7, regshift 2).
         # A writable scratch register distinguishes UART MMIO from open bus.
         proc.stdin.write(b"writel 0x01c2801c 0x5a\n")
@@ -148,7 +167,7 @@ def main():
             proc.communicate()
     print("PASS: independent H2+ machine launched; RAM write/readback through QTest")
     print("PASS: GICv2 distributor ID, control, SPI0 enable and pending registers")
-    print("PASS: UART0 scratch register write/readback through QTest")
+    print("PASS: UART0 IER and scratch register write/readback through QTest")
     print("NOTE: GIC interrupt delivery, UART TX/RX and guest boot not yet tested")
 
 
