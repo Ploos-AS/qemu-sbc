@@ -36,12 +36,12 @@ def main():
         ready, _, _ = select.select([proc.stdout], [], [], 15)
         if not ready:
             raise RuntimeError("H2+ QTest RAM read timed out")
-        reply = proc.stdout.readline().strip()
+        reply = os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip()
         if not reply.startswith("OK ") or int(reply.split()[1], 0) != 0x1234ABCD:
             raise RuntimeError(f"RAM readback mismatch: {reply!r}")
         # GICv2 distributor ID register: ARM GICv2 returns architecture ID.
         # This probes an actual MMIO device, not just an unmapped zero page.
-        proc.stdin.write("readl 0x01c81fe8\\n")
+        proc.stdin.write(b"readl 0x01c81fe8\n")
         proc.stdin.flush()
         ready, _, _ = select.select([proc.stdout], [], [], 15)
         if not ready:
