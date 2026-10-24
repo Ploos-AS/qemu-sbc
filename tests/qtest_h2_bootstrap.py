@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Smoke-test independent H2+ CPU/RAM bootstrap using QTest.
+"""Smoke-test independent H2+ RAM and GICv2 MMIO using QTest.
 
-No H2+ GIC, UART or guest boot is claimed by this test.
+Interrupt delivery, UART and guest boot are not covered.
 """
 import argparse
 import select
@@ -46,7 +46,7 @@ def main():
         ready, _, _ = select.select([proc.stdout], [], [], 15)
         if not ready:
             raise RuntimeError("H2+ GIC distributor ID read timed out")
-        reply = proc.stdout.readline().strip()
+        reply = os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip()
         if not reply.startswith("OK "):
             raise RuntimeError(f"GIC distributor ID read failed: {reply!r}")
         gic_id = int(reply.split()[1], 0)
