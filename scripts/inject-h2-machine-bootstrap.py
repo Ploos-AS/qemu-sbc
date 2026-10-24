@@ -16,6 +16,7 @@ SOURCE = r'''/*
 #include "qemu/osdep.h"
 #include "hw/boards.h"
 #include "hw/intc/arm_gic.h"
+#include "target/arm/gtimer.h"
 #include "hw/qdev-properties.h"
 #include "hw/core/cpu.h"
 #include "hw/sysbus.h"
@@ -45,6 +46,18 @@ static void h2_zero_lts_init(MachineState *machine)
     sysbus_mmio_map(gic_bus, 3, 0x01c86000);
     sysbus_connect_irq(gic_bus, 0, qdev_get_gpio_in(DEVICE(cpu), ARM_CPU_IRQ));
     sysbus_connect_irq(gic_bus, 1, qdev_get_gpio_in(DEVICE(cpu), ARM_CPU_FIQ));
+    /* H3-family reference PPI routing; H2+ hardware validation pending. */
+    const int timer_ppi[] = {
+        [GTIMER_PHYS] = 14,
+        [GTIMER_VIRT] = 11,
+        [GTIMER_HYP] = 10,
+        [GTIMER_SEC] = 13,
+    };
+    for (int i = 0; i < ARRAY_SIZE(timer_ppi); i++) {
+        qdev_connect_gpio_out(DEVICE(cpu), i,
+            qdev_get_gpio_in(gic, 128 + GIC_NR_SGIS + timer_ppi[i]));
+    }
+
     object_unref(cpu);
 
     memory_region_add_subregion(get_system_memory(), H2_DRAM_BASE,
