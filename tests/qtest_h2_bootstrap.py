@@ -54,7 +54,7 @@ def main():
             raise RuntimeError("GIC distributor ID is zero; device may be unmapped")
         # 16550-compatible UART0 scratch register (offset 7, regshift 2).
         # A writable scratch register distinguishes UART MMIO from open bus.
-        proc.stdin.write(b"writel 0x01c2801c 0x5a\\n")
+        proc.stdin.write(b"writel 0x01c2801c 0x5a\n")
         proc.stdin.flush()
         ready, _, _ = select.select([proc.stdout], [], [], 15)
         if not ready:
@@ -62,7 +62,7 @@ def main():
         reply = os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip()
         if reply != "OK":
             raise RuntimeError(f"UART0 scratch write failed: {reply!r}")
-        proc.stdin.write(b"readl 0x01c2801c\\n")
+        proc.stdin.write(b"readl 0x01c2801c\n")
         proc.stdin.flush()
         ready, _, _ = select.select([proc.stdout], [], [], 15)
         if not ready:
