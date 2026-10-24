@@ -71,6 +71,29 @@ def main():
             reply = os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip()
             if not reply.startswith("OK ") or (int(reply.split()[1], 0) & 1) != value:
                 raise RuntimeError(f"GIC distributor control mismatch: expected {value}, got {reply!r}")
+        # SPI0 is GIC interrupt ID 32. Verify its distributor enable bit.
+        # ISENABLER1 at 0x01c81104, ICENABLER1 at 0x01c81184.
+        for command, expected in (
+            (b"writel 0x01c81184 0x1\n", 0),
+            (b"writel 0x01c81104 0x1\n", 1),
+            (b"writel 0x01c81184 0x1\n", 0),
+        ):
+            proc.stdin.write(command)
+            proc.stdin.flush()
+            ready, _, _ = select.select([proc.stdout], [], [], 15)
+            if not ready:
+                raise RuntimeError("H2+ GIC SPI0 enable write timed out")
+            reply = os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip()
+            if reply != "OK":
+                raise RuntimeError(f"GIC SPI0 enable write failed: {reply!r}")
+            proc.stdin.write(b"readl 0x01c81104\n")
+            proc.stdin.flush()
+            ready, _, _ = select.select([proc.stdout], [], [], 15)
+            if not ready:
+                raise RuntimeError("H2+ GIC SPI0 enable read timed out")
+            reply = os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip()
+            if not reply.startswith("OK ") or (int(reply.split()[1], 0) & 1) != expected:
+                raise RuntimeError(f"GIC SPI0 enable mismatch: expected {expected}, got {reply!r}")
         # 16550-compatible UART0 scratch register (offset 7, regshift 2).
         # A writable scratch register distinguishes UART MMIO from open bus.
         proc.stdin.write(b"writel 0x01c2801c 0x5a\n")
@@ -100,7 +123,7 @@ def main():
             proc.kill()
             proc.communicate()
     print("PASS: independent H2+ machine launched; RAM write/readback through QTest")
-    print("PASS: GICv2 distributor ID and control register write/readback")
+    print("PASS: GICv2 distributor ID, control and SPI0 enable/disable registers")
     print("PASS: UART0 scratch register write/readback through QTest")
     print("NOTE: GIC interrupt delivery, UART TX/RX and guest boot not yet tested")
 
