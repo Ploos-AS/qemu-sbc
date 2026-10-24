@@ -204,6 +204,16 @@ def main():
         ready, _, _ = select.select([proc.stdout], [], [], 15)
         if not ready or os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip() != "OK":
             raise RuntimeError("H2+ UART0 IRQ cleanup failed")
+        # After UART0 deassertion and EOIR, no interrupt should remain
+        # pending at the GIC CPU interface (spurious ID 1023).
+        proc.stdin.write(b"readl 0x01c82018\n")  # GICC_HPPIR
+        proc.stdin.flush()
+        ready, _, _ = select.select([proc.stdout], [], [], 15)
+        if not ready:
+            raise RuntimeError("H2+ GIC post-IRQ pending read timed out")
+        reply = os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip()
+        if not reply.startswith("OK ") or (int(reply.split()[1], 0) & 0x3ff) != 1023:
+            raise RuntimeError(f"GIC still reports an IRQ after UART0 cleanup: {reply!r}")
         # 16550-compatible UART0 scratch register (offset 7, regshift 2).
         # A writable scratch register distinguishes UART MMIO from open bus.
         proc.stdin.write(b"writel 0x01c2801c 0x5a\n")
@@ -237,6 +247,7 @@ def main():
     print("PASS: UART0 IER and scratch register write/readback through QTest")
     print("PASS: UART0 THRE IRQ asserted GIC SPI0 pending")
     print("PASS: GIC CPU interface reported and acknowledged UART0 interrupt ID 32")
+    print("PASS: GIC CPU interface returned to no-pending-IRQ state after UART0 cleanup")
     print("NOTE: Cortex-A7 IRQ pin level, UART TX/RX and guest boot not yet tested")
 
 
