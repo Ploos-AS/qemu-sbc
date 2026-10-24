@@ -27,7 +27,7 @@ class QTestProtocolTests(unittest.TestCase):
             if node.func.attr != "encode" or not isinstance(node.func.value, ast.JoinedStr):
                 continue
             parts = [part.value for part in node.func.value.values if isinstance(part, ast.Constant)]
-            self.assertTrue(parts and parts[-1].endswith("\\n"),
+            self.assertTrue(parts and parts[-1].endswith("\n"),
                             "dynamic QTest command must end in a real newline")
             self.assertNotIn("\\\\n", "".join(parts))
         for command in commands:
