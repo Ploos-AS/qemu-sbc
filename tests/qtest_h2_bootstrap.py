@@ -137,6 +137,35 @@ def main():
             reply = os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip()
             if not reply.startswith("OK ") or (int(reply.split()[1], 0) & 2) != value:
                 raise RuntimeError(f"UART0 IER mismatch: expected {value}, got {reply!r}")
+        # Hardware IRQ smoke test: enable GIC SPI0 and UART0 THRE interrupt.
+        # A reset 16550-compatible UART has an empty transmit holding register.
+        # The resulting UART IRQ should make SPI0 (GIC interrupt ID 32) pending.
+        for command in (
+            b"writel 0x01c81284 0x1\n",  # clear software pending SPI0
+            b"writel 0x01c81104 0x1\n",  # enable SPI0
+            b"writel 0x01c28004 0x2\n",  # enable UART THRE IRQ
+        ):
+            proc.stdin.write(command)
+            proc.stdin.flush()
+            ready, _, _ = select.select([proc.stdout], [], [], 15)
+            if not ready:
+                raise RuntimeError("H2+ UART0 IRQ setup timed out")
+            reply = os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip()
+            if reply != "OK":
+                raise RuntimeError(f"UART0 IRQ setup failed: {reply!r}")
+        proc.stdin.write(b"readl 0x01c81204\n")
+        proc.stdin.flush()
+        ready, _, _ = select.select([proc.stdout], [], [], 15)
+        if not ready:
+            raise RuntimeError("H2+ UART0 to GIC SPI0 pending read timed out")
+        reply = os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip()
+        if not reply.startswith("OK ") or not (int(reply.split()[1], 0) & 1):
+            raise RuntimeError(f"UART0 THRE IRQ did not set GIC SPI0 pending: {reply!r}")
+        proc.stdin.write(b"writel 0x01c28004 0x0\n")
+        proc.stdin.flush()
+        ready, _, _ = select.select([proc.stdout], [], [], 15)
+        if not ready or os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip() != "OK":
+            raise RuntimeError("H2+ UART0 IRQ cleanup failed")
         # 16550-compatible UART0 scratch register (offset 7, regshift 2).
         # A writable scratch register distinguishes UART MMIO from open bus.
         proc.stdin.write(b"writel 0x01c2801c 0x5a\n")
@@ -168,7 +197,8 @@ def main():
     print("PASS: independent H2+ machine launched; RAM write/readback through QTest")
     print("PASS: GICv2 distributor ID, control, SPI0 enable and pending registers")
     print("PASS: UART0 IER and scratch register write/readback through QTest")
-    print("NOTE: GIC interrupt delivery, UART TX/RX and guest boot not yet tested")
+    print("PASS: UART0 THRE IRQ asserted GIC SPI0 pending")
+    print("NOTE: Cortex-A7 IRQ delivery, UART TX/RX and guest boot not yet tested")
 
 
 if __name__ == "__main__":
