@@ -176,6 +176,16 @@ def main():
             reply = os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip()
             if reply != "OK":
                 raise RuntimeError(f"GIC CPU interface setup failed: {reply!r}")
+        # Highest pending interrupt should be UART0 SPI0 before acknowledgement.
+        # GICC_HPPIR is read-only and does not consume the pending interrupt.
+        proc.stdin.write(b"readl 0x01c82018\n")  # GICC_HPPIR
+        proc.stdin.flush()
+        ready, _, _ = select.select([proc.stdout], [], [], 15)
+        if not ready:
+            raise RuntimeError("H2+ GIC highest pending IRQ read timed out")
+        reply = os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip()
+        if not reply.startswith("OK ") or (int(reply.split()[1], 0) & 0x3ff) != 32:
+            raise RuntimeError(f"GIC highest pending IRQ was not UART0 SPI0 ID 32: {reply!r}")
         proc.stdin.write(b"readl 0x01c8200c\n")  # GICC_IAR
         proc.stdin.flush()
         ready, _, _ = select.select([proc.stdout], [], [], 15)
@@ -226,7 +236,7 @@ def main():
     print("PASS: GICv2 distributor ID, control, SPI0 enable and pending registers")
     print("PASS: UART0 IER and scratch register write/readback through QTest")
     print("PASS: UART0 THRE IRQ asserted GIC SPI0 pending")
-    print("PASS: GIC CPU interface acknowledged UART0 interrupt ID 32")
+    print("PASS: GIC CPU interface reported and acknowledged UART0 interrupt ID 32")
     print("NOTE: Cortex-A7 IRQ pin level, UART TX/RX and guest boot not yet tested")
 
 
