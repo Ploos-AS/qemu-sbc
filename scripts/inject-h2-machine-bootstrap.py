@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Inject a minimal independent H2+ machine bootstrap into pinned QEMU.
 
-Cortex-A7, RAM and an initial GICv2 are instantiated. UART/boot follow.
+Cortex-A7, RAM, GICv2, timers and UART0 are instantiated; no boot.
 """
 import argparse
 from pathlib import Path
@@ -11,11 +11,13 @@ SOURCE = r'''/*
  * Copyright (c) 2026 Ploos AS
  * SPDX-License-Identifier: MIT
  *
- * Incomplete hardware model: CPU, RAM and GICv2; no guest boot yet.
+ * Incomplete hardware model: CPU, RAM, GICv2 and UART0; no guest boot yet.
  */
 #include "qemu/osdep.h"
 #include "hw/boards.h"
 #include "hw/intc/arm_gic.h"
+#include "hw/char/serial-mm.h"
+#include "system/system.h"
 #include "target/arm/gtimer.h"
 #include "hw/qdev-properties.h"
 #include "hw/core/cpu.h"
@@ -58,6 +60,9 @@ static void h2_zero_lts_init(MachineState *machine)
             qdev_get_gpio_in(gic, 128 + GIC_NR_SGIS + timer_ppi[i]));
     }
 
+    serial_mm_init(get_system_memory(), 0x01c28000, 2,
+                   qdev_get_gpio_in(gic, 0), 115200, serial_hd(0),
+                   DEVICE_LITTLE_ENDIAN);
     object_unref(cpu);
 
     memory_region_add_subregion(get_system_memory(), H2_DRAM_BASE,
@@ -68,7 +73,7 @@ static void h2_zero_lts_class_init(ObjectClass *oc, void *data)
 {
     MachineClass *mc = MACHINE_CLASS(oc);
 
-    mc->desc = "Orange Pi Zero LTS H2+ bootstrap (CPU/RAM/GICv2; no boot)";
+    mc->desc = "Orange Pi Zero LTS H2+ bootstrap (CPU/RAM/GICv2/UART0; no boot)";
     mc->init = h2_zero_lts_init;
     mc->default_ram_size = 256 * 1024 * 1024;
     mc->default_ram_id = "orangepi-zero-lts-h2.ram";
