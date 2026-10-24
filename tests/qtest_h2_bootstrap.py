@@ -161,6 +161,34 @@ def main():
         reply = os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip()
         if not reply.startswith("OK ") or not (int(reply.split()[1], 0) & 1):
             raise RuntimeError(f"UART0 THRE IRQ did not set GIC SPI0 pending: {reply!r}")
+        # GIC CPU interface: enable distributor Group 0 and CPU interface,
+        # allow all priorities, then acknowledge UART0 SPI0 (interrupt ID 32).
+        for command in (
+            b"writel 0x01c81000 0x1\n",  # GICD_CTLR
+            b"writel 0x01c82004 0xff\n",  # GICC_PMR
+            b"writel 0x01c82000 0x1\n",  # GICC_CTLR
+        ):
+            proc.stdin.write(command)
+            proc.stdin.flush()
+            ready, _, _ = select.select([proc.stdout], [], [], 15)
+            if not ready:
+                raise RuntimeError("H2+ GIC CPU interface setup timed out")
+            reply = os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip()
+            if reply != "OK":
+                raise RuntimeError(f"GIC CPU interface setup failed: {reply!r}")
+        proc.stdin.write(b"readl 0x01c8200c\n")  # GICC_IAR
+        proc.stdin.flush()
+        ready, _, _ = select.select([proc.stdout], [], [], 15)
+        if not ready:
+            raise RuntimeError("H2+ GIC interrupt acknowledge timed out")
+        reply = os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip()
+        if not reply.startswith("OK ") or (int(reply.split()[1], 0) & 0x3ff) != 32:
+            raise RuntimeError(f"GIC did not deliver UART0 SPI0 interrupt ID 32: {reply!r}")
+        proc.stdin.write(b"writel 0x01c82010 0x20\n")  # GICC_EOIR
+        proc.stdin.flush()
+        ready, _, _ = select.select([proc.stdout], [], [], 15)
+        if not ready or os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip() != "OK":
+            raise RuntimeError("H2+ GIC end-of-interrupt write failed")
         proc.stdin.write(b"writel 0x01c28004 0x0\n")
         proc.stdin.flush()
         ready, _, _ = select.select([proc.stdout], [], [], 15)
@@ -198,7 +226,8 @@ def main():
     print("PASS: GICv2 distributor ID, control, SPI0 enable and pending registers")
     print("PASS: UART0 IER and scratch register write/readback through QTest")
     print("PASS: UART0 THRE IRQ asserted GIC SPI0 pending")
-    print("NOTE: Cortex-A7 IRQ delivery, UART TX/RX and guest boot not yet tested")
+    print("PASS: GIC CPU interface acknowledged UART0 interrupt ID 32")
+    print("NOTE: Cortex-A7 IRQ pin level, UART TX/RX and guest boot not yet tested")
 
 
 if __name__ == "__main__":
