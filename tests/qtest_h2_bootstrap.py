@@ -4,7 +4,9 @@
 No H2+ GIC, UART or guest boot is claimed by this test.
 """
 import argparse
+import select
 import subprocess
+import os
 import sys
 
 
@@ -16,21 +18,20 @@ def main():
            "-qtest", "stdio", "-display", "none", "-monitor", "none",
            "-serial", "none", "-S", "-nodefaults"]
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE, text=True)
+                            stderr=subprocess.PIPE, text=False, bufsize=0)
     try:
         assert proc.stdin is not None and proc.stdout is not None
-        proc.stdin.write("writel 0x40000000 0x1234abcd\n")
+        proc.stdin.write(b"writel 0x40000000 0x1234abcd\n")
         proc.stdin.flush()
         # QTest is a long-lived protocol: do not wait for QEMU to exit on EOF.
         # Read one response, then terminate the emulator explicitly.
-        import select
         ready, _, _ = select.select([proc.stdout], [], [], 15)
         if not ready:
             raise RuntimeError("H2+ QTest RAM read timed out")
-        reply = proc.stdout.readline().strip()
+        reply = os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip()
         if reply != "OK":
             raise RuntimeError(f"RAM write failed: {reply!r}")
-        proc.stdin.write("readl 0x40000000\n")
+        proc.stdin.write(b"readl 0x40000000\n")
         proc.stdin.flush()
         ready, _, _ = select.select([proc.stdout], [], [], 15)
         if not ready:
