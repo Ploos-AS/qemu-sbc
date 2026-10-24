@@ -19,7 +19,17 @@ class QTestProtocolTests(unittest.TestCase):
                 continue
             if isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, bytes):
                 commands.append(node.args[0].value)
-        self.assertGreaterEqual(len(commands), 5)
+        self.assertGreaterEqual(len(commands), 6)
+        # Also inspect f-string commands passed through .encode("ascii").
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+                continue
+            if node.func.attr != "encode" or not isinstance(node.func.value, ast.JoinedStr):
+                continue
+            parts = [part.value for part in node.func.value.values if isinstance(part, ast.Constant)]
+            self.assertTrue(parts and parts[-1].endswith("\\n"),
+                            "dynamic QTest command must end in a real newline")
+            self.assertNotIn("\\\\n", "".join(parts))
         for command in commands:
             with self.subTest(command=command):
                 self.assertTrue(command.endswith(b"\n"))

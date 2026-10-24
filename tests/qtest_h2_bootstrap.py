@@ -55,7 +55,7 @@ def main():
         # GIC distributor control: exercise a writable register before IRQ tests.
         # Disable, enable Group 0, and restore disabled state.
         for value in (0, 1, 0):
-            proc.stdin.write(f"writel 0x01c81000 {value}\\n".encode("ascii"))
+            proc.stdin.write(f"writel 0x01c81000 {value}\n".encode("ascii"))
             proc.stdin.flush()
             ready, _, _ = select.select([proc.stdout], [], [], 15)
             if not ready:
@@ -63,7 +63,7 @@ def main():
             reply = os.read(proc.stdout.fileno(), 256).decode("ascii", errors="replace").strip()
             if reply != "OK":
                 raise RuntimeError(f"GIC distributor control write failed: {reply!r}")
-            proc.stdin.write(b"readl 0x01c81000\\n")
+            proc.stdin.write(b"readl 0x01c81000\n")
             proc.stdin.flush()
             ready, _, _ = select.select([proc.stdout], [], [], 15)
             if not ready:
