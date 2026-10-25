@@ -6,6 +6,8 @@ import select
 import subprocess
 import sys
 import time
+import tempfile
+from pathlib import Path
 
 MAILBOX = 0x40001000
 MAGIC = 0x48325031
@@ -43,10 +45,12 @@ def main():
     parser.add_argument("--qemu", required=True)
     parser.add_argument("--kernel", required=True)
     args = parser.parse_args()
+    serial_dir = tempfile.TemporaryDirectory(prefix="h2-uart-")
+    serial_path = Path(serial_dir.name) / "uart0.log"
     proc = subprocess.Popen(
         [args.qemu, "-machine", "orangepi-zero-lts-h2", "-m", "256M",
          "-kernel", args.kernel, "-accel", "tcg", "-display", "none",
-         "-serial", "none", "-monitor", "none", "-qmp", "stdio", "-nodefaults"],
+         "-serial", f"file:{serial_path}", "-monitor", "none", "-qmp", "stdio", "-nodefaults"],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         text=True, bufsize=1,
     )
@@ -64,7 +68,13 @@ def main():
             })
             if f"{MAGIC:08x}" in last.lower():
                 print("PASS: Cortex-A7 executed guest and wrote H2P1 mailbox")
-                return
+                serial_deadline = time.monotonic() + 5
+                while time.monotonic() < serial_deadline:
+                    if serial_path.exists() and b"H2 UART OK\\n" in serial_path.read_bytes():
+                        print("PASS: Cortex-A7 transmitted UART0 bytes")
+                        return
+                    time.sleep(0.1)
+                raise RuntimeError("guest mailbox passed but UART0 output missing")
             time.sleep(0.1)
         raise RuntimeError(f"guest did not write mailbox 0x{MAGIC:08x}: {last!r}")
     finally:
@@ -74,6 +84,7 @@ def main():
         except subprocess.TimeoutExpired:
             proc.kill()
             proc.communicate()
+        serial_dir.cleanup()
 
 
 if __name__ == "__main__":
