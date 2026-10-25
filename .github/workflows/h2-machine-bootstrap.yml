@@ -9,6 +9,7 @@ on:
       - 'tests/test_h2_qtest_protocol.py'
       - 'tests/guest/h2-exec.S'
       - 'tests/guest/h2-exec.ld'
+      - 'tests/test_h2_guest_execution.py'
       - '.github/workflows/h2-machine-bootstrap.yml'
   workflow_dispatch:
 
@@ -52,3 +53,7 @@ jobs:
         timeout-minutes: 2
         run: |
           python3 tests/qtest_h2_bootstrap.py --qemu qemu/build/qemu-system-arm
+
+      - name: Execute Cortex-A7 guest mailbox probe
+        timeout-minutes: 2
+        run: python3 tests/test_h2_guest_execution.py --qemu qemu/build/qemu-system-arm --kernel /tmp/h2-exec.elf
