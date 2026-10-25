@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Smoke-test independent H2+ RAM and GICv2 MMIO using QTest.
+"""Smoke-test H2+ RAM, UART0 and GICv2 MMIO through host-side QTest.
 
-Interrupt delivery and guest boot are not covered.
+GIC CPU-interface register acknowledgement is tested; guest instruction
+execution, CPU IRQ exception entry and Linux boot are not yet tested.
 """
 import argparse
 import select
