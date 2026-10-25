@@ -69,15 +69,14 @@ static void h2_zero_lts_init(MachineState *machine)
 
     /* Initial direct-kernel loader; guest boot is not yet qualified. */
     if (machine->kernel_filename) {
-        static struct arm_boot_info bootinfo = {
-            .loader_start = H2_DRAM_BASE,
-            .ram_size = machine->ram_size,
-            .board_id = -1,
-            .kernel_filename = machine->kernel_filename,
-            .kernel_cmdline = machine->kernel_cmdline,
-            .initrd_filename = machine->initrd_filename,
-            .dtb_filename = machine->dtb,
-        };
+        static struct arm_boot_info bootinfo;
+        bootinfo.loader_start = H2_DRAM_BASE;
+        bootinfo.ram_size = machine->ram_size;
+        bootinfo.board_id = -1;
+        bootinfo.kernel_filename = machine->kernel_filename;
+        bootinfo.kernel_cmdline = machine->kernel_cmdline;
+        bootinfo.initrd_filename = machine->initrd_filename;
+        bootinfo.dtb_filename = machine->dtb;
         arm_load_kernel(ARM_CPU(cpu), machine, &bootinfo);
     }
     object_unref(cpu);
