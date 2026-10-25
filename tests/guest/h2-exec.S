@@ -60,8 +60,22 @@ reset_entry:
     str r7, [r2, #4]     /* UART IER: THRE interrupt */
     cpsie i
 4:
+    /* IRQ handler writes marker before returning here. */
+    ldr r8, =0x40001004
+    ldr r9, =0x48324931
+6:
+    ldr r10, [r8]
+    cmp r10, r9
+    bne 7f
+    ldr r8, =0x40001008
+    ldr r9, =0x48325231 /* H2R1: IRQ return confirmed */
+    str r9, [r8]
+8:
     wfi
-    b 4b
+    b 8b
+7:
+    wfi
+    b 6b
 .size _start, . - _start
 
 .align 2

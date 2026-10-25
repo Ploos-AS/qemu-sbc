@@ -12,6 +12,8 @@ from pathlib import Path
 MAILBOX = 0x40001000
 IRQ_MAILBOX = 0x40001004
 IRQ_MAGIC = 0x48324931
+RETURN_MAILBOX = 0x40001008
+RETURN_MAGIC = 0x48325231
 MAGIC = 0x48325031
 
 
@@ -81,7 +83,16 @@ def main():
                             })
                             if f"{IRQ_MAGIC:08x}" in irq_value.lower():
                                 print("PASS: Cortex-A7 handled UART0 SPI32 IRQ")
-                                return
+                                return_deadline = time.monotonic() + 5
+                                while time.monotonic() < return_deadline:
+                                    return_value = command(proc, "human-monitor-command", {
+                                        "command-line": f"xp /1wx 0x{RETURN_MAILBOX:x}"
+                                    })
+                                    if f"{RETURN_MAGIC:08x}" in return_value.lower():
+                                        print("PASS: Cortex-A7 returned from IRQ and resumed guest")
+                                        return
+                                    time.sleep(0.1)
+                                raise RuntimeError(f"IRQ entered but guest did not resume: {return_value!r}")
                             time.sleep(0.1)
                         raise RuntimeError(f"UART output passed but IRQ marker missing: {irq_value!r}")
                     time.sleep(0.1)
