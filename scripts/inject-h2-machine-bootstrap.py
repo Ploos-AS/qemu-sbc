@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Inject a minimal independent H2+ machine bootstrap into pinned QEMU.
 
-Cortex-A7, RAM, GICv2, timers and UART0 are instantiated; no boot.
+Cortex-A7, RAM, GICv2, timers and UART0 with experimental -kernel loader.
 """
 import argparse
 from pathlib import Path
@@ -15,6 +15,7 @@ SOURCE = r'''/*
  */
 #include "qemu/osdep.h"
 #include "hw/boards.h"
+#include "hw/arm/boot.h"
 #include "hw/intc/arm_gic.h"
 #include "hw/char/serial-mm.h"
 #include "system/system.h"
@@ -63,10 +64,24 @@ static void h2_zero_lts_init(MachineState *machine)
     serial_mm_init(get_system_memory(), 0x01c28000, 2,
                    qdev_get_gpio_in(gic, 0), 115200, serial_hd(0),
                    DEVICE_LITTLE_ENDIAN);
-    object_unref(cpu);
-
     memory_region_add_subregion(get_system_memory(), H2_DRAM_BASE,
                                 machine->ram);
+
+    /* Initial direct-kernel loader; guest boot is not yet qualified. */
+    if (machine->kernel_filename) {
+        struct arm_boot_info bootinfo = {
+            .loader_start = H2_DRAM_BASE,
+            .ram_size = machine->ram_size,
+            .board_id = -1,
+            .nb_cpus = 1,
+            .kernel_filename = machine->kernel_filename,
+            .kernel_cmdline = machine->kernel_cmdline,
+            .initrd_filename = machine->initrd_filename,
+            .dtb_filename = machine->dtb,
+        };
+        arm_load_kernel(ARM_CPU(cpu), &bootinfo);
+    }
+    object_unref(cpu);
 }
 
 static void h2_zero_lts_class_init(ObjectClass *oc, void *data)
