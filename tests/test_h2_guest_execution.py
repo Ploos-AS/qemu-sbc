@@ -14,6 +14,8 @@ IRQ_MAILBOX = 0x40001004
 IRQ_MAGIC = 0x48324931
 RETURN_MAILBOX = 0x40001008
 RETURN_MAGIC = 0x48325231
+TIMER_MAILBOX = 0x4000100c
+TIMER_MAGIC = 0x48325431
 MAGIC = 0x48325031
 
 
@@ -90,7 +92,16 @@ def main():
                                     })
                                     if f"{RETURN_MAGIC:08x}" in return_value.lower():
                                         print("PASS: Cortex-A7 returned from IRQ and resumed guest")
-                                        return
+                                        timer_deadline = time.monotonic() + 5
+                                        while time.monotonic() < timer_deadline:
+                                            timer_value = command(proc, "human-monitor-command", {
+                                                "command-line": f"xp /1wx 0x{TIMER_MAILBOX:x}"
+                                            })
+                                            if f"{TIMER_MAGIC:08x}" in timer_value.lower():
+                                                print("PASS: Cortex-A7 handled physical generic timer PPI30")
+                                                return
+                                            time.sleep(0.1)
+                                        raise RuntimeError(f"timer PPI30 marker missing: {timer_value!r}")
                                     time.sleep(0.1)
                                 raise RuntimeError(f"IRQ entered but guest did not resume: {return_value!r}")
                             time.sleep(0.1)

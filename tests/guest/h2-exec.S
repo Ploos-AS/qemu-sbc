@@ -70,6 +70,15 @@ reset_entry:
     ldr r8, =0x40001008
     ldr r9, =0x48325231 /* H2R1: IRQ return confirmed */
     str r9, [r8]
+    /* Cortex-A7 physical generic timer: PPI30 (PPI index 14). */
+    ldr r6, =0x01c81000
+    mov r7, #1
+    lsl r7, r7, #30
+    str r7, [r6, #0x100] /* GICD_ISENABLER0 */
+    ldr r7, =1000000
+    mcr p15, 0, r7, c14, c2, 0 /* CNTP_TVAL */
+    mov r7, #1
+    mcr p15, 0, r7, c14, c2, 1 /* CNTP_CTL ENABLE */
 8:
     wfi
     b 8b
@@ -89,6 +98,8 @@ irq_entry:
     ldr r0, =0x01c82000
     ldr r1, [r0, #0x0c] /* GICC_IAR */
     ubfx r2, r1, #0, #10
+    cmp r2, #30
+    beq timer_irq
     cmp r2, #32
     bne 5f
     ldr r2, =0x01c28000
@@ -101,3 +112,12 @@ irq_entry:
     str r1, [r0, #0x10] /* GICC_EOIR */
     pop {r0-r3, r12, lr}
     subs pc, lr, #0
+
+/* Timer handler shares the saved IRQ context and common EOI path. */
+timer_irq:
+    mov r3, #0
+    mcr p15, 0, r3, c14, c2, 1 /* Disable CNTP_CTL */
+    ldr r2, =0x4000100c
+    ldr r3, =0x48325431 /* H2T1 */
+    str r3, [r2]
+    b 5b
