@@ -74,7 +74,7 @@ irq_entry:
     push {r0-r3, r12, lr}
     ldr r0, =0x01c82000
     ldr r1, [r0, #0x0c] /* GICC_IAR */
-    and r2, r1, #0x3ff
+    ubfx r2, r1, #0, #10
     cmp r2, #32
     bne 5f
     ldr r2, =0x01c28000
@@ -85,4 +85,5 @@ irq_entry:
     str r3, [r2]
 5:
     str r1, [r0, #0x10] /* GICC_EOIR */
-    pop {r0-r3, r12, pc}^
+    pop {r0-r3, r12, lr}
+    subs pc, lr, #0
