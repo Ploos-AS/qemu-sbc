@@ -30,7 +30,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ninja-build meson pkg-config libglib2.0-dev libpixman-1-dev python3-venv gcc-arm-linux-gnueabihf binutils-arm-linux-gnueabihf
       - name: Build Cortex-A7 guest execution probe
         run: |
-          arm-linux-gnueabihf-gcc -nostdlib -nostartfiles -ffreestanding -march=armv7-a -marm -Wl,-T,tests/guest/h2-exec.ld -Wl,--build-id=none -o /tmp/h2-exec.elf tests/guest/h2-exec.S
+          arm-linux-gnueabihf-gcc -nostdlib -nostartfiles -ffreestanding -march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=hard -marm -Wl,-T,tests/guest/h2-exec.ld -Wl,--build-id=none -o /tmp/h2-exec.elf tests/guest/h2-exec.S
           arm-linux-gnueabihf-objcopy -O binary /tmp/h2-exec.elf /tmp/h2-exec.bin
           test -s /tmp/h2-exec.bin
           arm-linux-gnueabihf-readelf -h /tmp/h2-exec.elf | grep -E "Machine:.*ARM"
