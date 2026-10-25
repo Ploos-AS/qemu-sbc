@@ -75,7 +75,7 @@ reset_entry:
     mov r7, #1
     lsl r7, r7, #30
     str r7, [r6, #0x100] /* GICD_ISENABLER0 */
-    ldr r7, =1000000
+    ldr r7, =10000
     mcr p15, 0, r7, c14, c2, 0 /* CNTP_TVAL */
     mov r7, #1
     mcr p15, 0, r7, c14, c2, 1 /* CNTP_CTL ENABLE */

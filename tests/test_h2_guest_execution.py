@@ -101,7 +101,20 @@ def main():
                                                 print("PASS: Cortex-A7 handled physical generic timer PPI30")
                                                 return
                                             time.sleep(0.1)
-                                        raise RuntimeError(f"timer PPI30 marker missing: {timer_value!r}")
+                                        regs = command(proc, "human-monitor-command", {
+                                            "command-line": "info registers"
+                                        })
+                                        gic_pending = command(proc, "human-monitor-command", {
+                                            "command-line": "xp /1wx 0x01c81200"
+                                        })
+                                        gic_enabled = command(proc, "human-monitor-command", {
+                                            "command-line": "xp /1wx 0x01c81100"
+                                        })
+                                        raise RuntimeError(
+                                            f"timer PPI30 marker missing: {timer_value!r}; "
+                                            f"GIC enabled={gic_enabled!r}; pending={gic_pending!r}; "
+                                            f"CPU registers={regs!r}"
+                                        )
                                     time.sleep(0.1)
                                 raise RuntimeError(f"IRQ entered but guest did not resume: {return_value!r}")
                             time.sleep(0.1)
