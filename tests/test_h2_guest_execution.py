@@ -10,6 +10,8 @@ import tempfile
 from pathlib import Path
 
 MAILBOX = 0x40001000
+IRQ_MAILBOX = 0x40001004
+IRQ_MAGIC = 0x48324931
 MAGIC = 0x48325031
 
 
@@ -72,7 +74,16 @@ def main():
                 while time.monotonic() < serial_deadline:
                     if serial_path.exists() and b"H2 UART OK\\n" in serial_path.read_bytes():
                         print("PASS: Cortex-A7 transmitted UART0 bytes")
-                        return
+                        irq_deadline = time.monotonic() + 5
+                        while time.monotonic() < irq_deadline:
+                            irq_value = command(proc, "human-monitor-command", {
+                                "command-line": f"xp /1wx 0x{IRQ_MAILBOX:x}"
+                            })
+                            if f"{IRQ_MAGIC:08x}" in irq_value.lower():
+                                print("PASS: Cortex-A7 handled UART0 SPI32 IRQ")
+                                return
+                            time.sleep(0.1)
+                        raise RuntimeError(f"UART output passed but IRQ marker missing: {irq_value!r}")
                     time.sleep(0.1)
                 raise RuntimeError("guest mailbox passed but UART0 output missing")
             time.sleep(0.1)

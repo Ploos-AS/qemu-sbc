@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  *
  * Entry address: 0x40000000 (must be explicitly configured by the loader).
- * Mailbox: 0x40001000. Does not enable IRQs.
+ * Mailbox: 0x40001000. IRQ probe marker: 0x40001004.
  */
 .syntax unified
 .cpu cortex-a7
@@ -11,6 +11,22 @@
 .global _start
 .type _start, %function
 _start:
+    b reset_entry
+    b .                  /* undefined */
+    b .                  /* SVC */
+    b .                  /* prefetch abort */
+    b .                  /* data abort */
+    b .                  /* reserved */
+    b irq_entry
+    b .                  /* FIQ */
+reset_entry:
+    /* Set VBAR to the vector table at the ELF entry point. */
+    ldr r0, =_start
+    mcr p15, 0, r0, c12, c0, 0
+    isb
+    cps #0x12          /* IRQ mode: independent exception stack */
+    ldr sp, =0x4000f000
+    cps #0x13          /* SVC mode */
     ldr sp, =0x40010000
     ldr r0, =0x40001000
     ldr r1, =0x48325031  /* "H2P1" execution marker */
@@ -29,10 +45,44 @@ _start:
     strb r4, [r2]       /* THR */
     b 2b
 1:
+    /* GICv2: enable UART0 SPI32 and the CPU interface. */
+    ldr r6, =0x01c81000
+    mov r7, #1
+    str r7, [r6, #0x104] /* ISENABLER1, SPI32 */
+    str r7, [r6]         /* GICD_CTLR */
+    ldr r6, =0x01c82000
+    mov r7, #0xff
+    str r7, [r6, #4]     /* GICC_PMR */
+    mov r7, #1
+    str r7, [r6]         /* GICC_CTLR */
+    ldr r2, =0x01c28000
+    mov r7, #2
+    str r7, [r2, #4]     /* UART IER: THRE interrupt */
+    cpsie i
+4:
     wfi
-    b 1b
+    b 4b
 .size _start, . - _start
 
 .align 2
 uart_message:
     .asciz "H2 UART OK\\n"
+
+.align 2
+irq_entry:
+    sub lr, lr, #4
+    push {r0-r3, r12, lr}
+    ldr r0, =0x01c82000
+    ldr r1, [r0, #0x0c] /* GICC_IAR */
+    and r2, r1, #0x3ff
+    cmp r2, #32
+    bne 5f
+    ldr r2, =0x01c28000
+    mov r3, #0
+    str r3, [r2, #4]    /* Disable UART THRE IRQ */
+    ldr r2, =0x40001004
+    ldr r3, =0x48324931 /* H2I1 */
+    str r3, [r2]
+5:
+    str r1, [r0, #0x10] /* GICC_EOIR */
+    pop {r0-r3, r12, pc}^
