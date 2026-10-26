@@ -16,6 +16,7 @@ RETURN_MAILBOX = 0x40001008
 RETURN_MAGIC = 0x48325231
 TIMER_MAILBOX = 0x4000100c
 TIMER_MAGIC = 0x48325431
+TIMER_COUNT_MAILBOX = 0x40001010
 MAGIC = 0x48325031
 
 
@@ -98,7 +99,12 @@ def main():
                                                 "command-line": f"xp /1wx 0x{TIMER_MAILBOX:x}"
                                             })
                                             if f"{TIMER_MAGIC:08x}" in timer_value.lower():
-                                                print("PASS: Cortex-A7 handled physical generic timer PPI30")
+                                                count_value = command(proc, "human-monitor-command", {
+                                                    "command-line": f"xp /1wx 0x{TIMER_COUNT_MAILBOX:x}"
+                                                })
+                                                if "0x00000003" not in count_value.lower():
+                                                    raise RuntimeError(f"expected three timer IRQs: {count_value!r}")
+                                                print("PASS: Cortex-A7 handled three periodic physical timer IRQs")
                                                 return
                                             time.sleep(0.1)
                                         regs = command(proc, "human-monitor-command", {

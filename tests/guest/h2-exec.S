@@ -117,9 +117,20 @@ irq_entry:
 
 /* Timer handler shares the saved IRQ context and common EOI path. */
 timer_irq:
+    /* Count timer interrupts in a persistent RAM mailbox. */
+    ldr r2, =0x40001010
+    ldr r3, [r2]
+    add r3, r3, #1
+    str r3, [r2]
+    cmp r3, #3
+    bge timer_done
+    ldr r3, =10000
+    mcr p15, 0, r3, c14, c2, 0 /* Rearm CNTP_TVAL */
+    b 5b
+timer_done:
     mov r3, #0
     mcr p15, 0, r3, c14, c2, 1 /* Disable CNTP_CTL */
     ldr r2, =0x4000100c
-    ldr r3, =0x48325431 /* H2T1 */
+    ldr r3, =0x48325431 /* H2T1: three timer IRQs handled */
     str r3, [r2]
     b 5b
