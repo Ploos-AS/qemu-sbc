@@ -70,11 +70,11 @@ reset_entry:
     ldr r8, =0x40001008
     ldr r9, =0x48325231 /* H2R1: IRQ return confirmed */
     str r9, [r8]
-    /* Cortex-A7 physical generic timer: PPI30 (PPI index 14). */
+    /* Cortex-A7 physical generic timer: secure PPI29 or nonsecure PPI30. */
     ldr r6, =0x01c81000
-    mov r7, #1
-    lsl r7, r7, #30
-    str r7, [r6, #0x100] /* GICD_ISENABLER0 */
+    mov r7, #3
+    lsl r7, r7, #29
+    str r7, [r6, #0x100] /* Enable secure physical PPI29 and nonsecure PPI30 */
     ldr r7, =10000
     mcr p15, 0, r7, c14, c2, 0 /* CNTP_TVAL */
     mov r7, #1
@@ -98,6 +98,8 @@ irq_entry:
     ldr r0, =0x01c82000
     ldr r1, [r0, #0x0c] /* GICC_IAR */
     ubfx r2, r1, #0, #10
+    cmp r2, #29
+    beq timer_irq
     cmp r2, #30
     beq timer_irq
     cmp r2, #32
