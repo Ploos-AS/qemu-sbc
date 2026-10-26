@@ -10,6 +10,7 @@ on:
       - 'tests/guest/h2-exec.S'
       - 'tests/guest/h2-exec.ld'
       - 'tests/test_h2_guest_execution.py'
+      - 'boards/orangepi-zero-lts-h2-minimal.dts'
       - '.github/workflows/h2-machine-bootstrap.yml'
   workflow_dispatch:
 
@@ -28,13 +29,18 @@ jobs:
       - name: QTest protocol regression tests
         run: python3 -m unittest discover -s tests -p 'test_h2_qtest_protocol.py' -v
       - name: Dependencies
-        run: sudo apt-get update && sudo apt-get install -y ninja-build meson pkg-config libglib2.0-dev libpixman-1-dev python3-venv gcc-arm-linux-gnueabihf binutils-arm-linux-gnueabihf
+        run: sudo apt-get update && sudo apt-get install -y ninja-build meson pkg-config libglib2.0-dev libpixman-1-dev python3-venv gcc-arm-linux-gnueabihf binutils-arm-linux-gnueabihf device-tree-compiler
       - name: Build Cortex-A7 guest execution probe
         run: |
           arm-linux-gnueabihf-gcc -nostdlib -nostartfiles -ffreestanding -march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=hard -marm -Wl,-T,tests/guest/h2-exec.ld -Wl,--build-id=none -o /tmp/h2-exec.elf tests/guest/h2-exec.S
           arm-linux-gnueabihf-objcopy -O binary /tmp/h2-exec.elf /tmp/h2-exec.bin
           test -s /tmp/h2-exec.bin
           arm-linux-gnueabihf-readelf -h /tmp/h2-exec.elf | grep -E "Machine:.*ARM"
+      - name: Compile minimal H2+ Linux handoff device tree
+        run: |
+          dtc -I dts -O dtb -o /tmp/orangepi-zero-lts-h2-minimal.dtb boards/orangepi-zero-lts-h2-minimal.dts
+          test -s /tmp/orangepi-zero-lts-h2-minimal.dtb
+          dtc -I dtb -O dts /tmp/orangepi-zero-lts-h2-minimal.dtb | grep -q 'compatible = "arm,cortex-a7"'
       - name: QEMU 10.0.0
         run: git clone --filter=blob:none --depth=1 --branch v10.0.0 https://github.com/qemu/qemu.git qemu
       - name: Inject independent H2+ machine

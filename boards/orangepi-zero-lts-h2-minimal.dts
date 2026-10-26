@@ -1,0 +1,57 @@
+/dts-v1/;
+
+/ {
+    model = "Ploos QEMU Orange Pi Zero LTS H2+ minimal Linux handoff";
+    compatible = "ploos,orangepi-zero-lts-h2-qemu";
+    #address-cells = <1>;
+    #size-cells = <1>;
+    interrupt-parent = <&gic>;
+
+    chosen {
+        bootargs = "console=ttyS0,115200 earlycon=uart8250,mmio32,0x01c28000";
+        stdout-path = &uart0;
+    };
+
+    aliases {
+        serial0 = &uart0;
+    };
+
+    memory@40000000 {
+        device_type = "memory";
+        reg = <0x40000000 0x10000000>;
+    };
+
+    cpus {
+        #address-cells = <1>;
+        #size-cells = <0>;
+        cpu@0 {
+            device_type = "cpu";
+            compatible = "arm,cortex-a7";
+            reg = <0>;
+        };
+    };
+
+    gic: interrupt-controller@1c81000 {
+        compatible = "arm,cortex-a7-gic";
+        interrupt-controller;
+        #interrupt-cells = <3>;
+        reg = <0x01c81000 0x1000>, <0x01c82000 0x1000>;
+    };
+
+    timer {
+        compatible = "arm,armv7-timer";
+        interrupts = <1 13 0x8>, <1 14 0x8>, <1 11 0x8>, <1 10 0x8>;
+        always-on;
+    };
+
+    uart0: serial@1c28000 {
+        compatible = "ns16550a";
+        reg = <0x01c28000 0x400>;
+        reg-shift = <2>;
+        reg-io-width = <1>;
+        clock-frequency = <24000000>;
+        current-speed = <115200>;
+        interrupts = <0 0 4>;
+        status = "okay";
+    };
+};
